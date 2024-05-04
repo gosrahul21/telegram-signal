@@ -375,7 +375,7 @@ export const checkIfPriceNearEma=(prices: any, ema: any)=>{
 }
 
 export const generateSignal = async(pairname: string, duration: '1h'|'4h'|'1d')=>{
-    const candles: CandleData[] = await fetchCandleData(pairname, duration);
+    const candles: any = await fetchCandleData(pairname, duration);
     const ema9 = calculateEMA(candles, 9);
     const ema21 = calculateEMA(candles, 21);
     const ema20 = calculateEMA(candles, 20);
