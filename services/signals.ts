@@ -12,7 +12,8 @@ interface CandleData {
 
 function calculateEMA(candlePrices: CandleData[], duration: number){
     const arr = candlePrices.map((candle:any)=>candle.close);
-    return ema(arr, duration)
+    arr.reverse();
+    return ema(arr, duration).reverse()
 };
 
 
@@ -383,6 +384,8 @@ export const generateSignal = async(pairname: string, duration: '1h'|'4h'|'1d')=
     // Generate crossing signals based on the EMAs and candle data
     const signals = generateCrossSignals(candles, ema9, ema21, ema20, ema50);
     // Process or display the signals (you can handle the output as per your requirement)
+    console.log(signals);
     return signals;
 }
 
+generateSignal('B-BTC_USDT', '4h');
