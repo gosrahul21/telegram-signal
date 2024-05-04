@@ -387,5 +387,3 @@ export const generateSignal = async(pairname: string, duration: '1h'|'4h'|'1d')=
     console.log(signals);
     return signals;
 }
-
-generateSignal('B-BTC_USDT', '4h');
