@@ -1,3 +1,4 @@
+
 import { fetchCandleData } from "./priceApi";
 const ema = require('exponential-moving-average');
 
@@ -16,7 +17,7 @@ function calculateEMA(candlePrices: CandleData[], duration: number){
     return ema(arr, duration).reverse()
 };
 
-
+const candlePriceMapping: Record<string,any> = {};
 const symbol= [
     "B-LQTY_USDT",
     "B-ENA_USDT",
@@ -289,7 +290,7 @@ const symbol= [
     ];
 
 // Function to generate buy signals based on recent EMA values
-function generateCrossSignals(prices:any, ema9: Array<number>, ema21:Array<number>, ema20:Array<number>, ema50:Array<number>) {
+function generateCrossSignals(prices:any, ema9: Array<number>, ema21:Array<number>, ema20:Array<number>, ema50:Array<number>, getTrend=false,) {
     // Array to hold buy signals
     const signals = [];
 
@@ -316,12 +317,12 @@ function generateCrossSignals(prices:any, ema9: Array<number>, ema21:Array<numbe
                 details: '21 EMA crossed above 9 EMA, sell/short signal'
             }); 
         }
-    else {
+    else if(getTrend) {
         signals.push({
             type: 'EMA crossover 9/21',
             time: prices[mostRecentIndex].time,
             price: prices[mostRecentIndex].close,
-            details: `${ema9[mostRecentIndex] < ema21[mostRecentIndex]?'downtren':"uptrend"}`
+            details: `${ema9[mostRecentIndex] < ema21[mostRecentIndex]?'downtrend':"uptrend"}`
         }); 
     }
     
@@ -346,7 +347,7 @@ function generateCrossSignals(prices:any, ema9: Array<number>, ema21:Array<numbe
                 details: '21 EMA crossed above 9 EMA, sell/short signal'
             }); 
         }
-    else {
+    else if(getTrend) {
         signals.push({
             type: 'EMA crossover 20/50',
             time: prices[mostRecentIndex].time,
@@ -375,8 +376,21 @@ export const checkIfPriceNearEma=(prices: any, ema: any)=>{
         return signals;
 }
 
+
+export const getTrendStatus = async (pairName: string, duration: '1h'|'4h'|'1d' )=>{
+    const candles: any =   candlePriceMapping[`${pairName}.${duration}`]
+    const ema9 = calculateEMA(candles, 9);
+    const ema21 = calculateEMA(candles, 21);
+    const ema20 = calculateEMA(candles, 20);
+    const ema50 = calculateEMA(candles, 50);
+    // Generate crossing signals based on the EMAs and candle data
+    // Process or display the signals (you can handle the output as per your requirement)
+    return [...generateCrossSignals(candles, ema9, ema21, ema20, ema50, true), ...checkIfPriceNearEma(candles, ema9)];
+}
+
 export const generateSignal = async(pairname: string, duration: '1h'|'4h'|'1d')=>{
     const candles: any = await fetchCandleData(pairname, duration);
+    candlePriceMapping[`${pairname}.${duration}`]= candles;
     const ema9 = calculateEMA(candles, 9);
     const ema21 = calculateEMA(candles, 21);
     const ema20 = calculateEMA(candles, 20);
@@ -386,3 +400,6 @@ export const generateSignal = async(pairname: string, duration: '1h'|'4h'|'1d')=
     // Process or display the signals (you can handle the output as per your requirement)
     return signals;
 }
+
+
+

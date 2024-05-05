@@ -269,7 +269,7 @@ export const keyPairs = [
     "B-1000SHIB_USDT"
     ]
 
-    export const keyPairsMapping = {
+    export const keyPairsMapping: any = {
         "LQTYUSDT":"B-LQTY_USDT",
         "ENAUSDT":"B-ENA_USDT",
         "TNSRUSDT":"B-TNSR_USDT",
