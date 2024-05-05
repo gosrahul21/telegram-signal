@@ -1,5 +1,6 @@
 
-import { fetchCandleData } from "./priceApi";
+import { Duration } from "../types/Duration";
+import { fetchCandleData, fetchTickerPrice } from "./priceApi";
 const ema = require('exponential-moving-average');
 
 interface CandleData {
@@ -18,6 +19,10 @@ function calculateEMA(candlePrices: CandleData[], duration: number){
 };
 
 const candlePriceMapping: Record<string,any> = {};
+const ema9Map: Record<string,any> = {};
+const ema21Map: Record<string,any> = {}
+const ema20Map: Record<string,any> = {}
+const ema50Map: Record<string,any> = {}
 const symbol= [
     "B-LQTY_USDT",
     "B-ENA_USDT",
@@ -290,7 +295,13 @@ const symbol= [
     ];
 
 // Function to generate buy signals based on recent EMA values
-function generateCrossSignals(prices:any, ema9: Array<number>, ema21:Array<number>, ema20:Array<number>, ema50:Array<number>, getTrend=false,) {
+function generateCrossSignals(
+     prices:any,
+     ema9: Array<number>, 
+     ema21:Array<number>, 
+     ema20:Array<number>, 
+     ema50:Array<number>, 
+     getTrend=false,) {
     // Array to hold buy signals
     const signals = [];
 
@@ -376,8 +387,7 @@ export const checkIfPriceNearEma=(prices: any, ema: any)=>{
         return signals;
 }
 
-
-export const getTrendStatus = async (pairName: string, duration: '1h'|'4h'|'1d' )=>{
+export const getTrendStatus = async (pairName: string, duration:Duration )=>{
     const candles: any =   candlePriceMapping[`${pairName}.${duration}`]
     const ema9 = calculateEMA(candles, 9);
     const ema21 = calculateEMA(candles, 21);
@@ -388,18 +398,47 @@ export const getTrendStatus = async (pairName: string, duration: '1h'|'4h'|'1d' 
     return [...generateCrossSignals(candles, ema9, ema21, ema20, ema50, true), ...checkIfPriceNearEma(candles, ema9)];
 }
 
-export const generateSignal = async(pairname: string, duration: '1h'|'4h'|'1d')=>{
+export const generateSignal = async(pairname: string, duration: Duration)=>{
     const candles: any = await fetchCandleData(pairname, duration);
     candlePriceMapping[`${pairname}.${duration}`]= candles;
     const ema9 = calculateEMA(candles, 9);
     const ema21 = calculateEMA(candles, 21);
     const ema20 = calculateEMA(candles, 20);
     const ema50 = calculateEMA(candles, 50);
+
+    ema9Map[`${pairname}.${duration}`]= ema9;
+    ema21Map[`${pairname}.${duration}`]= ema21;
+    ema20Map[`${pairname}.${duration}`]= ema20;
+    ema50Map[`${pairname}.${duration}`]= ema50;
+
     // Generate crossing signals based on the EMAs and candle data
     const signals = generateCrossSignals(candles, ema9, ema21, ema20, ema50);
     // Process or display the signals (you can handle the output as per your requirement)
     return signals;
 }
 
+// calculate if the current price is far away from ema 
+// calculate ema first, 
+// fetch current price 
+// create interval 
 
+export const priceAwayFromAverage = async (keyName: string, pairName: string, duration:Duration )=>{
+    const prices: any = await fetchTickerPrice();
+    const price = prices.find((price: any)=>price.market === keyName);
 
+    const ema = ema9Map[`${pairName}.${duration}`];
+    let signals = []
+    const mostRecentIndex = 0;
+        // Check if the price is near the 9 EMA
+        const priceToEMA9Ratio = (price.last_price - ema[mostRecentIndex]) / ema[mostRecentIndex];
+        const proximityThreshold = 0.12; // Define a threshold (e.g., 1%) for proximity
+        if (priceToEMA9Ratio >= proximityThreshold) {
+            signals.push({
+                type: `${keyName} Price in overbought Zone`,
+                time: prices[mostRecentIndex].time,
+                price: prices[mostRecentIndex].close,
+                details: `Price is ${proximityThreshold * 100}% above 9 EMA, sell signal`
+            });
+        }
+        return signals;
+}

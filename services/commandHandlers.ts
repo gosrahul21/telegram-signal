@@ -1,6 +1,6 @@
 import { Context } from "grammy";
 import { keyPairsMapping } from "../utils/constants";
-import { checkIfPriceNearEma, generateSignal, getTrendStatus } from "./signals";
+import { checkIfPriceNearEma, generateSignal, getTrendStatus, priceAwayFromAverage } from "./signals";
 const subscribed: string[] = [];
 const fallbackKeyPairs = [
   'BTCUSDT',
@@ -37,6 +37,7 @@ const subscribe = async (pairName: string, ctx: Context) => {
     const signalDaily =await generateSignal(pairName, '1d');
     renderSignal(pairName, signalDaily, ctx, '1d');
   }, 24 * 60 * 60 * 1000);
+
 };
 
 export const onSubscribe = (ctx: any)=>{
@@ -116,5 +117,16 @@ export const getStatus = async (ctx: any, keyName: string, duration: '1h'|'4h'|'
   const pariName = (keyPairsMapping as any)[keyName];
   const signal = await  getTrendStatus(pariName, duration);
   renderSignal(pariName, signal,ctx,duration );
+}
+
+export const overBoughtSignal = async (ctx: any)=> {
+  const keyName = ctx.match;
+  const pairName = keyPairsMapping[keyName];
+  const signal = await priceAwayFromAverage(keyName, pairName, '1d');
+  renderSignal(keyName, signal, ctx,'1d');
+  setInterval(async ()=>{
+    const signal = await priceAwayFromAverage(keyName, pairName, '1d');
+    renderSignal(keyName, signal, ctx,'1d');
+  }, 5*60*1000)
 }
 

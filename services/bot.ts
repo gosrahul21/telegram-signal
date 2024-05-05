@@ -2,7 +2,7 @@ import {
     Bot,
   } from "grammy";
 import "dotenv/config";
-import { dayStatus, fourHourStatus, hourStatus, onSubscribe } from "./commandHandlers";
+import { dayStatus, fourHourStatus, hourStatus, onSubscribe, overBoughtSignal,  } from "./commandHandlers";
 
 const bot = new Bot(process.env.BOT_TOKEN!);
 
@@ -12,6 +12,7 @@ bot.command("subscribe",onSubscribe)
 bot.command("hourstatus",hourStatus)
 bot.command("quarterhrstatus",fourHourStatus)
 bot.command("daystatus",dayStatus)
+bot.command('subscribeob',overBoughtSignal )
 
 bot.on("message", (ctx) => ctx.reply("Got another message!"));
 
