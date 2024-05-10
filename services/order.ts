@@ -1,7 +1,8 @@
 // create order 
+import axios from 'axios';
 import config from '../config'
 import * as crypto from 'crypto';
-export const  createOrder = (side:string , quantity: string, price: string, SYMBOL: string) =>{
+export const  createOrder = async (side:string , quantity: string, price: string, SYMBOL: string) =>{
     try {
         const payload = {
             symbol: SYMBOL,
@@ -59,18 +60,6 @@ function generateSignature(queryString: string) {
     return signature;
 }
 
-
-// generate hmac signature 
-// this need to be central
-
-
-// delete order 
-
-
-// close position 
-
-
-// update stoploss, stopprofit// update order 
 
 
 

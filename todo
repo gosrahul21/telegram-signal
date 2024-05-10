@@ -1,0 +1,26 @@
+signaling bot with mongoodb integration
+
+1. when user hit subscribe, save user to db and add its subscription 
+   write logic to get user details from telegram like:
+   username
+   telegramId
+   chatId
+   subscribedPairs
+2. add the subscribed user in ram 
+    create a cache store to store 
+    last run ema 
+    data to calculate ema past 1000 data -> calculate ema on this & save this data as well in cache  
+3. run the EMA checker every duration, if certain event occurs, notify subscribed user 
+   we have list of coins
+   traverse each coin, fetch its data 
+   calculate its ema,
+   get results, 
+   if any signals obtained, send messages to subscribed user
+
+
+   BOT_NAME=rahul_cryptosignal_bot
+BOT_TOKEN=7080963301:AAGEphNwP5-GEqsmUmcfNw5lE3zGKOIDJDI
+
+   
+
+

@@ -1,1 +1,10 @@
-export type Duration = '1h'|'4h'|'8h'|'1d'|'1w'| '1m';
+export type Duration = '1h' | '4h' | '8h' | '1d' | '1w' | '1m';
+
+export enum UpstoxInterval {
+    OneMinute = '1minute',
+    ThirtyMinutes = '30minute',
+    OneHour = '1hour',
+    OneDay = 'day',
+    OneWeek = 'week',
+    OneMonth = 'month',
+}
