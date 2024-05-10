@@ -86,8 +86,21 @@ async function iterateInstruments(interval: UpstoxInterval, bot: Bot) {
 // Schedule tasks
 export function scheduleTasks(bot: Bot) {
     // Schedule task every hour from 9:15 AM to 3:30 PM, excluding weekends
-    schedule.scheduleJob('30 15 * * 1-5', () => {
-        iterateInstruments(UpstoxInterval.OneHour, bot);
+    const cronExpressions = [
+        '15 9 * * 1-5',   // 9:15 am, Monday to Friday
+        '15 10 * * 1-5',  // 10:15 am, Monday to Friday
+        '15 11 * * 1-5',  // 11:15 am, Monday to Friday
+        '15 12 * * 1-5',  // 12:15 pm, Monday to Friday
+        '15 13 * * 1-5',  // 1:15 pm, Monday to Friday
+        '15 14 * * 1-5',  // 2:15 pm, Monday to Friday
+        '15 15 * * 1-5'   // 3:15 pm, Monday to Friday
+    ];
+
+    // Schedule the task for each cron expression
+    cronExpressions.forEach(cronExpression => {
+        schedule.scheduleJob(cronExpression, () => {
+            iterateInstruments(UpstoxInterval.OneHour, bot);
+        });
     });
 
     // Schedule daily report at 3 PM
