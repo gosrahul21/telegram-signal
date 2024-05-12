@@ -170,3 +170,59 @@ export const priceAwayFromAverage = async (keyName: string, pairName: string, du
     }
     return signals;
 }
+
+export const getTrend = (emasShort: number[], emasLong: number[]) => {
+    return emasShort[0] > emasLong[0] ? 'UPTREND' : 'DOWNTREND';
+}
+
+export const getSmallSignal = async (keyname: string, duration: Duration, emaShort: number, emaLong: number) => {
+    const pairname = keyPairsMapping[keyname]
+    const candles: any = await fetchCandleData(pairname, duration);
+    const emasShort = calculateEMA(candles, emaShort);
+    const emasLong = calculateEMA(candles, emaLong);
+    const mostRecentIndex = 0;
+    const signals = [];
+    if (emasShort[mostRecentIndex] > emasLong[mostRecentIndex] &&
+        emasShort[mostRecentIndex + 1] <= emasLong[mostRecentIndex + 1]) {
+        signals.push({
+            type: `EMA crossover ${emaShort}/${emaLong}`,
+            time: candles[mostRecentIndex].time,
+            price: candles[mostRecentIndex].close,
+            details: `${emaShort} EMA crossed above ${emaLong} EMA`
+        });
+    }
+    else if (emasShort[mostRecentIndex] < emasLong[mostRecentIndex] &&
+        emasShort[mostRecentIndex + 1] >= emasLong[mostRecentIndex + 1]) {
+        signals.push({
+            type: `EMA crossover ${emaShort}/${emaLong}`,
+            time: candles[mostRecentIndex].time,
+            price: candles[mostRecentIndex].close,
+            details: `${emaLong} EMA crossed above ${emaShort} EMA, sell/short signal`
+        });
+    }
+    const recentCandle: CandleData = candles[mostRecentIndex];
+    const secondRecentCandle: CandleData = candles[mostRecentIndex + 1];
+    const trend = getTrend(emasShort, emasLong);
+    if (trend === 'UPTREND') {
+        if (secondRecentCandle.close >= emasShort[mostRecentIndex + 1] && recentCandle.close < emasShort[mostRecentIndex]) {
+            // generate signal that trend may change, from downtrend to uptrend, take decision wisely 
+            signals.push({
+                type: `Trend reversal condition  ${emaShort}/${emaLong}`,
+                time: candles[mostRecentIndex].time,
+                price: candles[mostRecentIndex].close,
+                details: 'trend may change, from downtrend to uptrend, take decision wisely '
+            })
+        }
+    } else {
+        if (secondRecentCandle.close <= emasShort[mostRecentIndex + 1] && recentCandle.close > emasShort[mostRecentIndex]) {
+            // generate signal that trend may change, from downtrend to uptrend, take decision wisely 
+            signals.push({
+                type: `Trend reversal condition ${emaShort}/${emaLong}`,
+                time: candles[mostRecentIndex].time,
+                price: candles[mostRecentIndex].close,
+                details: 'trend may change, from downtrend to uptrend, take decision wisely '
+            })
+        }
+    }
+    return signals;
+}

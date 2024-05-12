@@ -1,10 +1,9 @@
 import { Bot, Context } from "grammy";
 import { keyPairsMapping } from "../utils/constants";
-import { generateSignal, getTrendStatus, priceAwayFromAverage } from "./signals";
+import { generateSignal, getSmallSignal, getTrendStatus, priceAwayFromAverage } from "./signals";
 import userService from "./userService";
 
 
-const subscribed: string[] = [];
 const fallbackKeyPairs = [
   'BTCUSDT',
   'SOLUSDT',
@@ -118,6 +117,18 @@ export const cryptoScheduler = async (bot: Bot) => {
 
   setInterval(async () => {
     fallbackKeyPairs.forEach(async (keyPair) => {
+      const signals = await getSmallSignal(keyPair, '15m', 20, 50);
+      renderSignal(keyPair, signals, bot, '15m');
+    })
+  }, 15 * 60 * 1000);
+
+  // when last candle close price was below first ema & prev 
+  // when last candle open price was low than ema 
+  // if low ema is greater then high ema and last close price was higher then first ema and recent candle close is lower then short ema, generate signal 
+  // if low ema is lower then high ema, means downtrend, check if last candle close was lower then first ema and recent candle ema is lower then close price
+
+  setInterval(async () => {
+    fallbackKeyPairs.forEach(async (keyPair) => {
       const signalOneHr = await generateSignal(keyPair, '1h');
       renderSignal(keyPair, signalOneHr, bot, '1h');
     })
@@ -138,3 +149,11 @@ export const cryptoScheduler = async (bot: Bot) => {
   }, 24 * 60 * 60 * 1000);
 
 };
+
+
+export const generateInOutSignal = async () => {
+
+}
+
+
+
