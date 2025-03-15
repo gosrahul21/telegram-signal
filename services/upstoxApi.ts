@@ -97,7 +97,6 @@ export const getIntradayCandles = async (
     }
 }
 
-
 export const aggregateToDayCandle = (intradayCandles: CandleData[]): CandleData => {
     // Ensure the input list is not empty
     if (!intradayCandles || intradayCandles.length === 0) {

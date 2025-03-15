@@ -24,3 +24,9 @@ BOT_TOKEN=7080963301:AAGEphNwP5-GEqsmUmcfNw5lE3zGKOIDJDI
    
 
 
+   1. fetch monthly timeframe ema's, macd, rsi, weekly timeframe ema's macd, rsi and daily, or even do quarterly hour
+
+   2. fed the data to the open-ai and ask for the techincal analysis on the given data. 
+
+   
+

@@ -1,7 +1,7 @@
 import { Bot, Context } from "grammy";
 import { keyPairsMapping } from "../utils/constants";
 import { generateSignal, getSmallSignal, getTrendStatus, priceAwayFromAverage } from "./signals";
-import userService from "./userService";
+// import userService from "./userService";
 
 
 const fallbackKeyPairs = [
@@ -44,7 +44,7 @@ export const onSubscribe = async (ctx: any) => {
   };
   // Add the user to the database using userService
   try {
-    await userService.addUser(user);
+    // await userService.addUser(user);
     ctx.reply(`Subscribed successfully`);
   } catch (error) {
     ctx.reply(`Error adding user ${telegramId} to the database:`, error);
