@@ -55,7 +55,7 @@ function getQueryString(payload: Record<string, any>) {
 function generateSignature(queryString: string) {
   // generate queryString from payload
   const signature = crypto
-    .createHmac("sha256", config?.API_SECRET!)
+    .createHmac("sha256", config?.API_SECRET || "")
     .update(queryString)
     .digest("hex");
   console.log({ signature });

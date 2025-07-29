@@ -1,5 +1,5 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.symbol = [
     "B-LQTY_USDT",
     "B-ENA_USDT",
@@ -278,5 +278,5 @@ exports.instrumentMapping = {
     IRFC: 'NSE_EQ|INE053F01010',
     MAHABANK: 'NSE_EQ|INE457A01014',
     ASIANPAINTS: 'NSE_EQ|INE021A01026',
-    IRCTC: 'NSE_EQ|INE335Y01020',
+    IRCTC: 'NSE_EQ|INE335Y01020'
 };

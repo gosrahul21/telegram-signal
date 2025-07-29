@@ -6,43 +6,43 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose = __importStar(require("mongoose"));
+exports.__esModule = true;
+var mongoose = __importStar(require("mongoose"));
 // Define the User schema
-const userSchema = new mongoose.Schema({
+var userSchema = new mongoose.Schema({
     chatId: {
         type: Number,
         required: true,
-        unique: true,
+        unique: true
     },
     telegramId: {
         type: Number,
         required: true,
-        unique: true,
+        unique: true
     },
     username: {
         type: String,
-        required: true,
+        required: true
     },
     subscriptions: [{
             pairName: {
                 type: String,
-                required: true,
+                required: true
             },
             duration: {
                 type: String,
-                enum: ['1h', '4h', '1d'],
-                required: true,
-            },
+                "enum": ['1h', '4h', '1d'],
+                required: true
+            }
         }],
     // You can add more fields as needed
     createdAt: {
         type: Date,
-        default: Date.now,
+        "default": Date.now
     },
     updatedAt: {
         type: Date,
-        default: Date.now,
+        "default": Date.now
     }
 });
 // Create the User model using the schema

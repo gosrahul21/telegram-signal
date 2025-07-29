@@ -1,5 +1,5 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.keyPairs = [
     "B-LQTY_USDT",
     "B-ENA_USDT",
@@ -538,5 +538,5 @@ exports.keyPairsMapping = {
     MTLUSDT: "B-MTL_USDT",
     OGNUSDT: "B-OGN_USDT",
     NKNUSDT: "B-NKN_USDT",
-    "1000SHIBUSDT": "B-1000SHIB_USDT",
+    "1000SHIBUSDT": "B-1000SHIB_USDT"
 };
