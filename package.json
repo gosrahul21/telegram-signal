@@ -25,6 +25,7 @@
     "axios": "^1.11.0",
     "dotenv": "^16.3.1",
     "exponential-moving-average": "^1.0.0",
+    "express": "^5.1.0",
     "grammy": "^1.21.1",
     "mongoose": "^8.0.3",
     "technicalindicators": "^3.1.0"
