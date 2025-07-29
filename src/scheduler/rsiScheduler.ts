@@ -272,13 +272,32 @@ export const renderRSISignal = async (
 
   for (const signal of signalArray) {
     const rsiInfo = signal.rsi ? `\nRSI: ${signal.rsi.toFixed(2)}` : "";
-    subscriberId.forEach(async (chatId) => {
-      await bot.api.sendMessage(
-        chatId,
-        `<b>RSI Signal for ${pairName} - ${duration}</b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}${rsiInfo}\nDetails: ${signal.details}`,
-        { parse_mode: "HTML" }
-      );
-    });
+
+    // Broadcast to all subscribed users
+    for (const chatId of subscriberId) {
+      try {
+        await bot.api.sendMessage(
+          chatId,
+          `<b>RSI Signal for ${pairName} - ${duration}</b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}${rsiInfo}\nDetails: ${signal.details}`,
+          { parse_mode: "HTML" }
+        );
+      } catch (error) {
+        console.error(`Failed to send RSI signal to ${chatId}:`, error);
+      }
+    }
+
+    // Also send to default chat ID if no subscribers
+    if (subscriberId.length === 0) {
+      try {
+        await bot.api.sendMessage(
+          process.env.CHAT_ID || "",
+          `<b>RSI Signal for ${pairName} - ${duration}</b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}${rsiInfo}\nDetails: ${signal.details}`,
+          { parse_mode: "HTML" }
+        );
+      } catch (error) {
+        console.error(`Failed to send RSI signal to default chat:`, error);
+      }
+    }
   }
 };
 
