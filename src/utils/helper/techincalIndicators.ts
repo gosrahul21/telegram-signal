@@ -1,19 +1,19 @@
-import { fetchCandleData } from "./priceApi";
+import { fetchCandleData } from "../../services/priceApi";
 
 const ti = require("technicalindicators");
 
 // Calculate EMA
-function calculateEMA(prices: number[], period: number) {
+export function calculateEMA(prices: number[], period: number) {
   return ti.EMA.calculate({ period, values: prices });
 }
 
 // Calculate RSI (Relative Strength Index)
-function calculateRSI(prices: number[], period = 14) {
+export function calculateRSI(prices: number[], period = 14) {
   return ti.RSI.calculate({ period, values: prices });
 }
 
 // Calculate MACD (12, 26, 9)
-function calculateMACD(prices: number[]) {
+export function calculateMACD(prices: number[]) {
   return ti.MACD.calculate({
     values: prices,
     fastPeriod: 12,
@@ -54,5 +54,3 @@ export const getIndicatorOnTimeFrame = async (
 
   return indicatorDetails;
 };
-
-

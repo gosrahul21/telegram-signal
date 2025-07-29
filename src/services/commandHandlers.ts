@@ -1,11 +1,10 @@
 import { Bot, Context } from "grammy";
 import { keyPairsMapping } from "../utils/constants";
 import {
-  generateSignal,
-  getSmallSignal,
   getTrendStatus,
-  priceAwayFromAverage,
 } from "./signals";
+import { emaCrossScheduler } from "../scheduler/emaCrossScheduler";
+import { rsiScheduler } from "../scheduler/rsiScheduler";
 // import userService from "./userService";
 
 const fallbackKeyPairs = ["BTCUSDT", "SOLUSDT", "BNBUSDT", "ETHUSDT"];
@@ -18,14 +17,6 @@ export const renderSignal = async (
   duration: string
 ) => {
   // retrieve subscribed users
-  // const subscribedUsers = userService.getSubscribedUsers();
-  // subscribedUsers.map(async ({ chatId }: any) => {
-  // for (const signal of signals) {
-  // await bot.api.sendMessage(
-  //   chatId,
-  //   `<b>Signal for ${pairName} - ${duration} </b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}\nDetails: ${signal.details}`,
-  //   { parse_mode: "HTML" }
-  // );
 
   await ctx.reply(
     `<b>Signal for ${pairName} - ${duration} </b>\nType: ${signals.type}\nTime: ${signals.time}\nPrice: ${signals.price}\nDetails: ${signals.details}`,
@@ -109,50 +100,14 @@ export const getStatus = async (
   renderSignal(pariName, signal, ctx, duration);
 };
 
-export const overBoughtSignal = async (ctx: any) => {
-  const keyName = ctx.match;
-  const pairName = keyPairsMapping[keyName];
-  const signal = await priceAwayFromAverage(keyName, pairName, "1d");
-  renderSignal(keyName, signal, ctx, "1d");
-  setInterval(async () => {
-    const signal = await priceAwayFromAverage(keyName, pairName, "1d");
-    renderSignal(keyName, signal, ctx, "1d");
-  }, 5 * 60 * 1000);
+// EMA Cross Scheduler - moved to emaCrossScheduler.ts
+export const cryptoScheduler = async (bot: Bot) => {
+  await emaCrossScheduler(bot);
 };
 
-export const cryptoScheduler = async (bot: Bot) => {
-  setInterval(async () => {
-    fallbackKeyPairs.forEach(async (keyPair) => {
-      const signals = await getSmallSignal(keyPair, "15m", 20, 50);
-      renderSignal(keyPair, signals, bot, "15m");
-    });
-  }, 15 * 60 * 1000);
-
-  // when last candle close price was below first ema & prev
-  // when last candle open price was low than ema
-  // if low ema is greater then high ema and last close price was higher then first ema and recent candle close is lower then short ema, generate signal
-  // if low ema is lower then high ema, means downtrend, check if last candle close was lower then first ema and recent candle ema is lower then close price
-
-  setInterval(async () => {
-    fallbackKeyPairs.forEach(async (keyPair) => {
-      const signalOneHr = await generateSignal(keyPair, "1h");
-      renderSignal(keyPair, signalOneHr, bot, "1h");
-    });
-  }, 60 * 60 * 1000);
-
-  setInterval(async () => {
-    fallbackKeyPairs.forEach(async (keyPair) => {
-      const signalFourHr = await generateSignal(keyPair, "4h");
-      renderSignal(keyPair, signalFourHr, bot, "4h");
-    });
-  }, 4 * 60 * 60 * 1000);
-
-  setInterval(async () => {
-    fallbackKeyPairs.forEach(async (keyPair) => {
-      const signalDaily = await generateSignal(keyPair, "1d");
-      renderSignal(keyPair, signalDaily, bot, "1d");
-    });
-  }, 24 * 60 * 60 * 1000);
+// RSI Scheduler - moved to rsiScheduler.ts
+export const rsiOverboughtScheduler = async (bot: Bot) => {
+  await rsiScheduler(bot);
 };
 
 export const generateInOutSignal = async () => {};

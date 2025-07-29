@@ -1,5 +1,5 @@
 require("dotenv").config(); // Load environment variables
-import { getIndicatorOnTimeFrame } from "./techincalIndicators";
+import { getIndicatorOnTimeFrame } from "../utils/helper/techincalIndicators";
 import fs from "fs";
 // const { Configuration, OpenAIApi } = require("openai");
 import OpenAI from "openai";

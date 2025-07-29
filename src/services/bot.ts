@@ -2,20 +2,27 @@ import {
   Bot,
 } from "grammy";
 
-import { cryptoScheduler, dayStatus, fourHourStatus, hourStatus, onSubscribe, overBoughtSignal, } from "./commandHandlers";
+import { cryptoScheduler, dayStatus, fourHourStatus, hourStatus, onSubscribe, rsiOverboughtScheduler, } from "./commandHandlers";
 import { scheduleTasks } from "./scheduler";
+
+export let subscriberId: number[] = [];
 
 export const initializeBot = () => {
   const bot = new Bot(process.env.BOT_TOKEN!);
 
   bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
-  bot.command("subscribe", onSubscribe)
+  bot.command("subscribe", (ctx)=>{subscriberId.push(ctx.chat.id); ctx.reply("subscribed successfully with other "+subscriberId.length +"users")})
   bot.command("hourstatus", hourStatus)
   bot.command("quarterhrstatus", fourHourStatus)
   bot.command("daystatus", dayStatus)
-  bot.command('subscribeob', overBoughtSignal)
+  bot.command("unsubscribe", (ctx) => {
+    subscriberId = subscriberId.filter((id) => id !== ctx.chat.id);
+    ctx.reply("Unsubscribed from all updates.");
+  })
+  // bot.command("rsi", getRSIStatus)
+  // bot.command('subscribeob', overBoughtSignal)
 
-  bot.on("message", (ctx) => ctx.reply("Got another message!"));
+  bot.command("ping", (ctx) => ctx.reply("Got another message!"+ctx.chat.id));
 
   bot.start();
 
@@ -43,8 +50,8 @@ export const initializeBot = () => {
   ], {}, undefined as any);
 
   // in this context, we have bot info
-  // iteration will run here and will messages 
+
   // cryptoScheduler(bot);
-  // setTimeout(()=>  scheduleTasks(bot),3000)
+  rsiOverboughtScheduler(bot);
 
 }

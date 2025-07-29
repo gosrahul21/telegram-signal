@@ -1,6 +1,7 @@
 import { Duration } from "../types/Duration";
 import { keyPairsMapping } from "../utils/constants";
 import { fetchCandleData, fetchTickerPrice } from "./priceApi";
+import { calculateRSI } from "../utils/helper/techincalIndicators";
 const ema = require("exponential-moving-average");
 
 interface CandleData {
@@ -259,4 +260,16 @@ export const getSmallSignal = async (
     }
   }
   return signals;
+};
+
+export const getRSIOverbought = async (keyname: string, duration: Duration) => {
+  // const pairname = keyPairsMapping[keyname];
+  const candles: any = await fetchCandleData(keyname, duration);
+  console.log(candles);
+  const rsi = calculateRSI(
+    candles.map((candle: any) => candle.close),
+    14
+  );
+  console.log(rsi.slice(-1)[0]);
+  return rsi;
 };
