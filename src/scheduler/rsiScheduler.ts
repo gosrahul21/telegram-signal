@@ -359,7 +359,7 @@ const setupRSIInterval = (
 
   setInterval(async () => {
     await processRSIAnalysis(bot, duration);
-    bot.api.sendMessage(subscriberId?.[0] || "", "RSI Scheduler started");
+    // bot.api.sendMessage(subscriberId?.[0] || "", "RSI Scheduler started");
   }, intervalMs);
 };
 
