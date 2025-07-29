@@ -9,9 +9,23 @@ app.listen(process.env.PORT || 3000, () => {
 });
 // import connectToDb from './models/connection';
 import { initializeBot } from "./services/bot";
+import axios from "axios";
 function init() {
   // connectToDb();
   initializeBot();
 }
 
 init();
+
+// own service call to make backend alive for render
+
+setInterval(async () => {
+  try {
+    const response = await axios.get(
+      "https://telegram-signal-suva.onrender.com/"
+    );
+    console.log(response.data);
+  } catch (error) {
+    console.log("error", error);
+  }
+}, 1000 * 60 * 10);
