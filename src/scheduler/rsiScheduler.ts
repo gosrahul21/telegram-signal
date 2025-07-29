@@ -371,6 +371,7 @@ export const rsiScheduler = async (bot: Bot): Promise<void> => {
   // Set up intervals for all timeframes
   Object.entries(SCHEDULER_INTERVALS).forEach(([duration, interval]) => {
     setupRSIInterval(bot, duration as Duration, interval);
+    bot.api.sendMessage(subscriberId?.[0] || "", "RSI Scheduler started");
   });
 
   logger("All RSI analysis intervals configured", "green");
