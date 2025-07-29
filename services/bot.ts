@@ -44,7 +44,7 @@ export const initializeBot = () => {
 
   // in this context, we have bot info
   // iteration will run here and will messages 
-  cryptoScheduler(bot);
-  setTimeout(()=>  scheduleTasks(bot),3000)
+  // cryptoScheduler(bot);
+  // setTimeout(()=>  scheduleTasks(bot),3000)
 
 }

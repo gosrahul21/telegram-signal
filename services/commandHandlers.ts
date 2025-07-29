@@ -1,35 +1,37 @@
 import { Bot, Context } from "grammy";
 import { keyPairsMapping } from "../utils/constants";
-import { generateSignal, getSmallSignal, getTrendStatus, priceAwayFromAverage } from "./signals";
+import {
+  generateSignal,
+  getSmallSignal,
+  getTrendStatus,
+  priceAwayFromAverage,
+} from "./signals";
 // import userService from "./userService";
 
+const fallbackKeyPairs = ["BTCUSDT", "SOLUSDT", "BNBUSDT", "ETHUSDT"];
+const markets = ["BTCUSDT", "SOLUSDT", "BNBUSDT", "ETHUSDT"];
 
-const fallbackKeyPairs = [
-  'BTCUSDT',
-  'SOLUSDT',
-  'BNBUSDT',
-  'ETHUSDT',
-];
-const markets = [
-  'BTCUSDT',
-  'SOLUSDT',
-  'BNBUSDT',
-  'ETHUSDT',
-];
+export const renderSignal = async (
+  pairName: string,
+  signals: any,
+  ctx: any,
+  duration: string
+) => {
+  // retrieve subscribed users
+  // const subscribedUsers = userService.getSubscribedUsers();
+  // subscribedUsers.map(async ({ chatId }: any) => {
+  // for (const signal of signals) {
+  // await bot.api.sendMessage(
+  //   chatId,
+  //   `<b>Signal for ${pairName} - ${duration} </b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}\nDetails: ${signal.details}`,
+  //   { parse_mode: "HTML" }
+  // );
 
-export const renderSignal = async (pairName: string, signals: any, bot: Bot, duration: string) => {
-  // retrieve subscribed users 
-  const subscribedUsers = userService.getSubscribedUsers();
-  subscribedUsers.map(async ({ chatId }: any) => {
-    for (const signal of signals) {
-      await bot.api.sendMessage(
-        chatId,
-        `<b>Signal for ${pairName} - ${duration} </b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}\nDetails: ${signal.details}`,
-        { parse_mode: "HTML" }
-      );
-    }
-  })
-}
+  await ctx.reply(
+    `<b>Signal for ${pairName} - ${duration} </b>\nType: ${signals.type}\nTime: ${signals.time}\nPrice: ${signals.price}\nDetails: ${signals.details}`,
+    { parse_mode: "HTML" }
+  );
+};
 
 // subcribe to the notification
 export const onSubscribe = async (ctx: any) => {
@@ -38,7 +40,8 @@ export const onSubscribe = async (ctx: any) => {
   // Create a user object
   const user: any = {
     telegramId, // The user's Telegram ID
-    username: ctx.from.username || ctx.from.first_name + " " + ctx.from.last_name,
+    username:
+      ctx.from.username || ctx.from.first_name + " " + ctx.from.last_name,
     chatId, // The user's chat ID
     // subscriptions: pairName ? [pairName] : fallbackKeyPairs // List of subscriptions (individual or fallback pairs)
   };
@@ -49,19 +52,19 @@ export const onSubscribe = async (ctx: any) => {
   } catch (error) {
     ctx.reply(`Error adding user ${telegramId} to the database:`, error);
   }
-}
+};
 
 export const hourStatus = async (ctx: any) => {
   const keyName = ctx.match;
   const pariName = (keyPairsMapping as any)[keyName];
-  const duration = '1h';
+  const duration = "1h";
   if (!pariName) {
     return fallbackKeyPairs.forEach((fallbackPair) => {
-      getStatus(ctx, fallbackPair, '1h');
+      getStatus(ctx, fallbackPair, "1h");
     });
   }
   await getStatus(ctx, keyName, duration);
-}
+};
 
 export const fourHourStatus = async (ctx: any) => {
   const keyName = ctx.match;
@@ -70,13 +73,13 @@ export const fourHourStatus = async (ctx: any) => {
   // If pairName is not found in keyPairsMapping, use fallback key pairs
   if (!pairName) {
     fallbackKeyPairs.forEach((fallbackPair: string) => {
-      getStatus(ctx, fallbackPair, '4h');
+      getStatus(ctx, fallbackPair, "4h");
     });
     return;
   }
 
   // If pairName is found, proceed with getting the status
-  await getStatus(ctx, keyName, '4h');
+  await getStatus(ctx, keyName, "4h");
 };
 
 // Function to get the daily status
@@ -87,73 +90,69 @@ export const dayStatus = async (ctx: any) => {
   // If pairName is not found in keyPairsMapping, use fallback key pairs
   if (!pairName) {
     fallbackKeyPairs.forEach((fallbackPair) => {
-      getStatus(ctx, fallbackPair, '1d');
+      getStatus(ctx, fallbackPair, "1d");
     });
     return;
   }
 
   // If pairName is found, proceed with getting the status
-  await getStatus(ctx, keyName, '1d');
+  await getStatus(ctx, keyName, "1d");
 };
 
-export const getStatus = async (ctx: any, keyName: string, duration: '1h' | '4h' | '1d') => {
+export const getStatus = async (
+  ctx: any,
+  keyName: string,
+  duration: "1h" | "4h" | "1d"
+) => {
   const pariName = (keyPairsMapping as any)[keyName];
   const signal = await getTrendStatus(pariName, duration);
   renderSignal(pariName, signal, ctx, duration);
-}
+};
 
 export const overBoughtSignal = async (ctx: any) => {
   const keyName = ctx.match;
   const pairName = keyPairsMapping[keyName];
-  const signal = await priceAwayFromAverage(keyName, pairName, '1d');
-  renderSignal(keyName, signal, ctx, '1d');
+  const signal = await priceAwayFromAverage(keyName, pairName, "1d");
+  renderSignal(keyName, signal, ctx, "1d");
   setInterval(async () => {
-    const signal = await priceAwayFromAverage(keyName, pairName, '1d');
-    renderSignal(keyName, signal, ctx, '1d');
-  }, 5 * 60 * 1000)
-}
+    const signal = await priceAwayFromAverage(keyName, pairName, "1d");
+    renderSignal(keyName, signal, ctx, "1d");
+  }, 5 * 60 * 1000);
+};
 
 export const cryptoScheduler = async (bot: Bot) => {
-
   setInterval(async () => {
     fallbackKeyPairs.forEach(async (keyPair) => {
-      const signals = await getSmallSignal(keyPair, '15m', 20, 50);
-      renderSignal(keyPair, signals, bot, '15m');
-    })
+      const signals = await getSmallSignal(keyPair, "15m", 20, 50);
+      renderSignal(keyPair, signals, bot, "15m");
+    });
   }, 15 * 60 * 1000);
 
-  // when last candle close price was below first ema & prev 
-  // when last candle open price was low than ema 
-  // if low ema is greater then high ema and last close price was higher then first ema and recent candle close is lower then short ema, generate signal 
+  // when last candle close price was below first ema & prev
+  // when last candle open price was low than ema
+  // if low ema is greater then high ema and last close price was higher then first ema and recent candle close is lower then short ema, generate signal
   // if low ema is lower then high ema, means downtrend, check if last candle close was lower then first ema and recent candle ema is lower then close price
 
   setInterval(async () => {
     fallbackKeyPairs.forEach(async (keyPair) => {
-      const signalOneHr = await generateSignal(keyPair, '1h');
-      renderSignal(keyPair, signalOneHr, bot, '1h');
-    })
+      const signalOneHr = await generateSignal(keyPair, "1h");
+      renderSignal(keyPair, signalOneHr, bot, "1h");
+    });
   }, 60 * 60 * 1000);
 
   setInterval(async () => {
-    fallbackKeyPairs.forEach((async (keyPair) => {
-      const signalFourHr = await generateSignal(keyPair, '4h');
-      renderSignal(keyPair, signalFourHr, bot, '4h');
-    }))
+    fallbackKeyPairs.forEach(async (keyPair) => {
+      const signalFourHr = await generateSignal(keyPair, "4h");
+      renderSignal(keyPair, signalFourHr, bot, "4h");
+    });
   }, 4 * 60 * 60 * 1000);
 
   setInterval(async () => {
     fallbackKeyPairs.forEach(async (keyPair) => {
-      const signalDaily = await generateSignal(keyPair, '1d');
-      renderSignal(keyPair, signalDaily, bot, '1d');
-    })
+      const signalDaily = await generateSignal(keyPair, "1d");
+      renderSignal(keyPair, signalDaily, bot, "1d");
+    });
   }, 24 * 60 * 60 * 1000);
-
 };
 
-
-export const generateInOutSignal = async () => {
-
-}
-
-
-
+export const generateInOutSignal = async () => {};
