@@ -8,10 +8,11 @@ app.listen(process.env.PORT || 3000, () => {
   console.log("Server is running on port 3000");
 });
 // import connectToDb from './models/connection';
-import { initializeBot } from "./services/bot";
+import { initializeBot } from "./bot/bot";
 import axios from "axios";
+import connectToDatabase from "./models/connection";
 function init() {
-  // connectToDb();
+  connectToDatabase();
   initializeBot();
 }
 
@@ -29,3 +30,5 @@ setInterval(async () => {
     console.log("error", error);
   }
 }, 1000 * 60 * 10);
+
+

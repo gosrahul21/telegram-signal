@@ -1,9 +1,9 @@
 import { Bot } from "grammy";
-import { Duration } from "../types/Duration";
-import { keyPairsMapping } from "../utils/constants";
-import { fetchCandleData } from "../services/priceApi";
-import { logger } from "../logger";
-import { subscriberId } from "../services/bot";
+import { Duration } from "../../types/Duration";
+import { fetchCandleData } from "../../services/priceApi";
+import { keyPairsMapping } from "../../utils/constants";
+import userRepository from "../../repositories/userRepository";
+import { logger } from "../../logger";
 const ema = require("exponential-moving-average");
 
 // ============================================================================
@@ -245,10 +245,10 @@ export const renderSignal = async (
   duration: string
 ): Promise<void> => {
   const signalArray = Array.isArray(signals) ? signals : [signals];
-
+  const subscribers: any = await userRepository.getSubscribedUsers();
   for (const signal of signalArray) {
     // Broadcast to all subscribed users
-    for (const chatId of subscriberId) {
+    for (const {chatId}  of subscribers) {
       try {
         await bot.api.sendMessage(
           chatId,
@@ -257,19 +257,6 @@ export const renderSignal = async (
         );
       } catch (error) {
         console.error(`Failed to send EMA signal to ${chatId}:`, error);
-      }
-    }
-
-    // Also send to default chat ID if no subscribers
-    if (subscriberId.length === 0) {
-      try {
-        await bot.api.sendMessage(
-          process.env.CHAT_ID || "",
-          `<b>EMA Signal for ${pairName} - ${duration}</b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}\nDetails: ${signal.details}`,
-          { parse_mode: "HTML" }
-        );
-      } catch (error) {
-        console.error(`Failed to send EMA signal to default chat:`, error);
       }
     }
   }

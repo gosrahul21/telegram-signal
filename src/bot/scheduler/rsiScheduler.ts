@@ -1,9 +1,11 @@
 import { Bot } from "grammy";
-import { Duration } from "../types/Duration";
-import { fetchCandleData, fetchTickerPrice } from "../services/priceApi";
-import { calculateRSI } from "../utils/helper/techincalIndicators";
-import { logger } from "../logger";
-import { subscriberId } from "../services/bot";
+import { fetchCandleData, fetchTickerPrice } from "../../services/priceApi";
+import { Duration } from "../../types/Duration";
+import { calculateRSI } from "../../utils/helper/techincalIndicators";
+import userRepository from "../../repositories/userRepository";
+import { logger } from "../../logger";
+import { renderRSISignal, RSISignal, RSIStatus } from "../utils/renderRSISignal";
+
 const ema = require("exponential-moving-average");
 
 // ============================================================================
@@ -30,7 +32,7 @@ const SCHEDULER_INTERVALS = {
 // INTERFACES & TYPES
 // ============================================================================
 
-interface CandleData {
+export interface CandleData {
   open: number;
   high: number;
   low: number;
@@ -39,25 +41,7 @@ interface CandleData {
   time: number;
 }
 
-interface RSISignal {
-  type: string;
-  time: number;
-  price: number;
-  rsi?: number;
-  details: string;
-}
 
-interface RSIStatus {
-  status:
-    | "Extreme Overbought"
-    | "Overbought"
-    | "Neutral"
-    | "Oversold"
-    | "Extreme Oversold";
-  rsi: number;
-  signal: "Strong Sell" | "Sell" | "Hold" | "Buy" | "Strong Buy";
-  details: string;
-}
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -193,39 +177,51 @@ export const getRSIStatus = async (
   duration: Duration
 ): Promise<RSIStatus> => {
   const currentRSI = await getCurrentRSI(keyName, duration);
+  const {price} = await fetchTickerPrice(keyName);
+  const time = new Date().toISOString();
 
   if (currentRSI >= RSI_EXTREME_OVERBOUGHT) {
     return {
-      status: "Extreme Overbought",
+      type: "Extreme Overbought",
       rsi: currentRSI,
+      price: price,
+      time: time,
       signal: "Strong Sell",
       details: `RSI is extremely overbought at ${currentRSI.toFixed(2)}`,
     };
   } else if (currentRSI >= RSI_OVERBOUGHT_THRESHOLD) {
     return {
-      status: "Overbought",
+      type: "Overbought",
       rsi: currentRSI,
+      price: price,
+      time: time,
       signal: "Sell",
       details: `RSI is overbought at ${currentRSI.toFixed(2)}`,
     };
   } else if (currentRSI <= RSI_EXTREME_OVERSOLD) {
     return {
-      status: "Extreme Oversold",
+      type: "Extreme Oversold",
       rsi: currentRSI,
+      price: price,
+      time: time,
       signal: "Strong Buy",
       details: `RSI is extremely oversold at ${currentRSI.toFixed(2)}`,
     };
   } else if (currentRSI <= RSI_OVERSOLD_THRESHOLD) {
     return {
-      status: "Oversold",
+      type: "Oversold",
       rsi: currentRSI,
+      price: price,
+      time: time,
       signal: "Buy",
       details: `RSI is oversold at ${currentRSI.toFixed(2)}`,
     };
   } else {
     return {
-      status: "Neutral",
-      rsi: currentRSI,
+      type: "Neutral",
+      rsi: currentRSI,  
+      price: price,
+      time: time,
       signal: "Hold",
       details: `RSI is neutral at ${currentRSI.toFixed(2)}`,
     };
@@ -255,51 +251,6 @@ export const priceAwayFromAverage = async (
   return signals;
 };
 
-// ============================================================================
-// SIGNAL RENDERING
-// ============================================================================
-
-/**
- * Render RSI signals to Telegram
- */
-export const renderRSISignal = async (
-  pairName: string,
-  signals: RSISignal | RSISignal[],
-  bot: Bot,
-  duration: string
-): Promise<void> => {
-  const signalArray = Array.isArray(signals) ? signals : [signals];
-
-  for (const signal of signalArray) {
-    const rsiInfo = signal.rsi ? `\nRSI: ${signal.rsi.toFixed(2)}` : "";
-
-    // Broadcast to all subscribed users
-    for (const chatId of subscriberId) {
-      try {
-        await bot.api.sendMessage(
-          chatId,
-          `<b>RSI Signal for ${pairName} - ${duration}</b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}${rsiInfo}\nDetails: ${signal.details}`,
-          { parse_mode: "HTML" }
-        );
-      } catch (error) {
-        console.error(`Failed to send RSI signal to ${chatId}:`, error);
-      }
-    }
-
-    // Also send to default chat ID if no subscribers
-    if (subscriberId.length === 0) {
-      try {
-        await bot.api.sendMessage(
-          process.env.CHAT_ID || "",
-          `<b>RSI Signal for ${pairName} - ${duration}</b>\nType: ${signal.type}\nTime: ${signal.time}\nPrice: ${signal.price}${rsiInfo}\nDetails: ${signal.details}`,
-          { parse_mode: "HTML" }
-        );
-      } catch (error) {
-        console.error(`Failed to send RSI signal to default chat:`, error);
-      }
-    }
-  }
-};
 
 // ============================================================================
 // SCHEDULER FUNCTIONS
