@@ -51,5 +51,4 @@ export const initializeBot = () => {
   // in this context, we have bot info
   rsiScheduler(bot);
 
-
 }

@@ -15,7 +15,6 @@ export const onSubscribe = async (ctx: any) => {
     // Add the user to the database using userService
     try {
      const newUser = await userRepository.addUser(user);
-     console.log(newUser)
       ctx.reply(`Subscribed successfully with ${userRepository.getSubscribedUsers().length} users`);
     } catch (error) {
       ctx.reply(`Error adding user ${telegramId} to the database:`, error);

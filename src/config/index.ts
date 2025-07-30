@@ -1,6 +1,16 @@
-import {config} from 'dotenv'
+import { config } from "dotenv";
 
-const env= config();
+const env = config();
+const RSI_OVERBOUGHT_THRESHOLD = 70;
+const RSI_OVERSOLD_THRESHOLD = 30;
+const RSI_EXTREME_OVERBOUGHT = 80;
+const RSI_EXTREME_OVERSOLD = 20;
 
-
-export default env.parsed;
+export default {
+  ...env.parsed,
+  DELAY_BETWEEN_PAIRS_MS: 350,
+  RSI_EXTREME_OVERBOUGHT,
+  RSI_OVERBOUGHT_THRESHOLD,
+  RSI_EXTREME_OVERSOLD,
+  RSI_OVERSOLD_THRESHOLD,
+};

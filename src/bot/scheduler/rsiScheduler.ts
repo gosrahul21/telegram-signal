@@ -3,8 +3,14 @@ import { fetchCandleData, fetchTickerPrice } from "../../services/priceApi";
 import { Duration } from "../../types/Duration";
 import { calculateRSI } from "../../utils/helper/techincalIndicators";
 import userRepository from "../../repositories/userRepository";
+import config from "../../config/index";
 import { logger } from "../../logger";
-import { renderRSISignal, RSISignal, RSIStatus } from "../utils/renderRSISignal";
+import {
+  renderRSISignal,
+  RSISignal,
+  RSIStatus,
+} from "../utils/renderRSISignal";
+import { resolve } from "path";
 
 const ema = require("exponential-moving-average");
 
@@ -15,10 +21,6 @@ const ema = require("exponential-moving-average");
 const fallbackKeyPairs = ["BTCUSDT", "SOLUSDT", "SUIUSDT"];
 
 // RSI thresholds
-const RSI_OVERBOUGHT_THRESHOLD = 70;
-const RSI_OVERSOLD_THRESHOLD = 30;
-const RSI_EXTREME_OVERBOUGHT = 80;
-const RSI_EXTREME_OVERSOLD = 20;
 
 // Scheduler intervals (in minutes)
 const SCHEDULER_INTERVALS = {
@@ -40,8 +42,6 @@ export interface CandleData {
   close: number;
   time: number;
 }
-
-
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -102,7 +102,7 @@ export const checkRSIOverbought = async (
   const mostRecentIndex = 0;
   const signals: RSISignal[] = [];
 
-  if (currentRSI >= RSI_EXTREME_OVERBOUGHT) {
+  if (currentRSI >= config.RSI_EXTREME_OVERBOUGHT) {
     signals.push({
       type: `${keyName} RSI Extreme Overbought`,
       time: candles[mostRecentIndex].time,
@@ -112,7 +112,7 @@ export const checkRSIOverbought = async (
         2
       )}, strong sell signal`,
     });
-  } else if (currentRSI >= RSI_OVERBOUGHT_THRESHOLD) {
+  } else if (currentRSI >= config.RSI_OVERBOUGHT_THRESHOLD) {
     signals.push({
       type: `${keyName} RSI Overbought`,
       time: candles[mostRecentIndex].time,
@@ -144,7 +144,7 @@ export const checkRSIOversold = async (
   const mostRecentIndex = 0;
   const signals: RSISignal[] = [];
 
-  if (currentRSI <= RSI_EXTREME_OVERSOLD) {
+  if (currentRSI <= config.RSI_EXTREME_OVERSOLD) {
     signals.push({
       type: `${keyName} RSI Extreme Oversold`,
       time: candles[mostRecentIndex].time,
@@ -154,7 +154,7 @@ export const checkRSIOversold = async (
         2
       )}, strong buy signal`,
     });
-  } else if (currentRSI <= RSI_OVERSOLD_THRESHOLD) {
+  } else if (currentRSI <= config.RSI_OVERSOLD_THRESHOLD) {
     signals.push({
       type: `${keyName} RSI Oversold`,
       time: candles[mostRecentIndex].time,
@@ -177,10 +177,10 @@ export const getRSIStatus = async (
   duration: Duration
 ): Promise<RSIStatus> => {
   const currentRSI = await getCurrentRSI(keyName, duration);
-  const {price} = await fetchTickerPrice(keyName);
+  const { price } = await fetchTickerPrice(keyName);
   const time = new Date().toISOString();
 
-  if (currentRSI >= RSI_EXTREME_OVERBOUGHT) {
+  if (currentRSI >= config.RSI_EXTREME_OVERBOUGHT) {
     return {
       type: "Extreme Overbought",
       rsi: currentRSI,
@@ -189,7 +189,7 @@ export const getRSIStatus = async (
       signal: "Strong Sell",
       details: `RSI is extremely overbought at ${currentRSI.toFixed(2)}`,
     };
-  } else if (currentRSI >= RSI_OVERBOUGHT_THRESHOLD) {
+  } else if (currentRSI >= config.RSI_OVERBOUGHT_THRESHOLD) {
     return {
       type: "Overbought",
       rsi: currentRSI,
@@ -198,7 +198,7 @@ export const getRSIStatus = async (
       signal: "Sell",
       details: `RSI is overbought at ${currentRSI.toFixed(2)}`,
     };
-  } else if (currentRSI <= RSI_EXTREME_OVERSOLD) {
+  } else if (currentRSI <= config.RSI_EXTREME_OVERSOLD) {
     return {
       type: "Extreme Oversold",
       rsi: currentRSI,
@@ -207,7 +207,7 @@ export const getRSIStatus = async (
       signal: "Strong Buy",
       details: `RSI is extremely oversold at ${currentRSI.toFixed(2)}`,
     };
-  } else if (currentRSI <= RSI_OVERSOLD_THRESHOLD) {
+  } else if (currentRSI <= config.RSI_OVERSOLD_THRESHOLD) {
     return {
       type: "Oversold",
       rsi: currentRSI,
@@ -219,7 +219,7 @@ export const getRSIStatus = async (
   } else {
     return {
       type: "Neutral",
-      rsi: currentRSI,  
+      rsi: currentRSI,
       price: price,
       time: time,
       signal: "Hold",
@@ -250,7 +250,6 @@ export const priceAwayFromAverage = async (
 
   return signals;
 };
-
 
 // ============================================================================
 // SCHEDULER FUNCTIONS
@@ -289,6 +288,11 @@ const processRSIAnalysis = async (
         `Error processing RSI analysis for ${keyPair} at ${duration}: ${error}`,
         "red"
       );
+    } finally {
+      // 1 sec timeout
+      await new Promise((resolve) =>
+        setTimeout(() => resolve(1), config.DELAY_BETWEEN_PAIRS_MS)
+      );
     }
   }
 };
@@ -310,7 +314,6 @@ const setupRSIInterval = (
 
   setInterval(async () => {
     await processRSIAnalysis(bot, duration);
-    // bot.api.sendMessage(subscriberId?.[0] || "", "RSI Scheduler started");
   }, intervalMs);
 };
 
