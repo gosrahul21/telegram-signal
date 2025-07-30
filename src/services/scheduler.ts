@@ -10,6 +10,7 @@ import {
 import * as schedule from "node-schedule";
 import "dotenv/config";
 import userService from "./userService";
+import { delay } from "../bot/utils/delay";
 
 // Import additional dependencies
 // For example: messaging service, database connection, EMA calculation functions, etc.
@@ -95,9 +96,7 @@ async function iterateInstruments(interval: UpstoxInterval, bot: Bot) {
       notifyUser(instrument, reversalDetected, interval, bot);
     }
 
-    await new Promise((resolve) =>
-      setTimeout(() => resolve("one sec delay"), 1000)
-    );
+    await delay(1000);
   }
 }
 

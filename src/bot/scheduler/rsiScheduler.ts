@@ -9,6 +9,7 @@ import {
   RSISignal,
   RSIStatus,
 } from "../utils/renderRSISignal";
+import { delay } from "../utils/delay";
 
 const ema = require("exponential-moving-average");
 
@@ -286,9 +287,7 @@ const processRSIAnalysis = async (
       );
     } finally {
       // 1 sec timeout
-      await new Promise((resolve) =>
-        setTimeout(() => resolve(1), config.DELAY_BETWEEN_PAIRS_MS)
-      );
+      await delay(config.DELAY_BETWEEN_PAIRS_MS);
     }
   }
 };
@@ -320,9 +319,11 @@ export const rsiScheduler = async (bot: Bot): Promise<void> => {
   logger("RSI Scheduler started", "green");
 
   // Set up intervals for all timeframes
-  Object.entries(SCHEDULER_INTERVALS).forEach(([duration, interval]) => {
+  for (let [duration, interval] of Object.entries(SCHEDULER_INTERVALS)) {
     setupRSIInterval(bot, duration as Duration, interval);
-  });
+    await delay(7000);
+    console.log("setup of listner");
+  }
 
   logger("All RSI analysis intervals configured", "green");
 };
