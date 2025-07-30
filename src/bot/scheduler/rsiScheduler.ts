@@ -2,7 +2,6 @@ import { Bot } from "grammy";
 import { fetchCandleData, fetchTickerPrice } from "../../services/priceApi";
 import { Duration } from "../../types/Duration";
 import { calculateRSI } from "../../utils/helper/techincalIndicators";
-import userRepository from "../../repositories/userRepository";
 import config from "../../config/index";
 import { logger } from "../../logger";
 import {
@@ -10,7 +9,6 @@ import {
   RSISignal,
   RSIStatus,
 } from "../utils/renderRSISignal";
-import { resolve } from "path";
 
 const ema = require("exponential-moving-average");
 
@@ -19,8 +17,6 @@ const ema = require("exponential-moving-average");
 // ============================================================================
 
 const fallbackKeyPairs = ["BTCUSDT", "SOLUSDT", "SUIUSDT"];
-
-// RSI thresholds
 
 // Scheduler intervals (in minutes)
 const SCHEDULER_INTERVALS = {

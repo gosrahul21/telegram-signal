@@ -41,7 +41,6 @@ export const renderRSISignal = async (
     for (const signal of signalArray) {
       const rsiInfo = signal.rsi ? `\nRSI: ${signal.rsi.toFixed(2)}` : "";
       const subscribedUsers: any = await userRepository.getSubscribedUsers();
-      console.log({subscribedUsers})
       // Broadcast to all subscribed users
       for (const subscribedUser of subscribedUsers) {
         try {
@@ -51,7 +50,6 @@ export const renderRSISignal = async (
             { parse_mode: "HTML" }
           );
         } catch (error) {
-          console.log({subscribedUser})
           console.error(`Failed to send RSI signal to ${subscribedUser.chatId}:`, error);
         }
       }

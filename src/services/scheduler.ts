@@ -39,11 +39,6 @@ async function iterateInstruments(interval: UpstoxInterval, bot: Bot) {
   const formattedToDate = formatDate(toDate);
   const formattedFromDate = formatDate(fromDate);
   for (const [instrument, symbol] of Object.entries(instrumentMapping)) {
-    console.log({
-      instrument,
-      symbol,
-      interval,
-    });
     let historicalCandles = await fetchCandleHistory(
       symbol as string,
       interval === UpstoxInterval.OneHour
@@ -61,7 +56,6 @@ async function iterateInstruments(interval: UpstoxInterval, bot: Bot) {
         ...historicalCandles,
       ];
     }
-    console.log(aggregateToDayCandle(intradayCandles));
     // Calculate EMA for the instrument
     const emaShort = calculateEMA(historicalCandles, 9); // Short period EMA (e.g., 9 periods)
     const emaLong = calculateEMA(historicalCandles, 21); // Long period EMA (e.g., 26 periods)

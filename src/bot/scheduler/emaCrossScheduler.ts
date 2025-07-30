@@ -324,7 +324,6 @@ export const emaCrossScheduler = async (bot: Bot): Promise<void> => {
 
   // Set up intervals for all timeframes
   Object.entries(SCHEDULER_INTERVALS).forEach(([duration, interval]) => {
-    console.log(duration, interval);
     setupEMAInterval(bot, duration as Duration, interval);
   });
 

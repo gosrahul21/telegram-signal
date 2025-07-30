@@ -265,11 +265,9 @@ export const getSmallSignal = async (
 export const getRSIOverbought = async (keyname: string, duration: Duration) => {
   // const pairname = keyPairsMapping[keyname];
   const candles: any = await fetchCandleData(keyname, duration);
-  console.log(candles);
   const rsi = calculateRSI(
     candles.map((candle: any) => candle.close),
     14
   );
-  console.log(rsi.slice(-1)[0]);
   return rsi;
 };

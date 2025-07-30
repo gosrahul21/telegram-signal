@@ -148,7 +148,6 @@ export class CoindcxService {
         stop_loss_price,
       },
     };
-    console.log(body);
     try {
       const response = await axios.post(
         this.baseurl + "/exchange/v1/derivatives/futures/orders/create",
