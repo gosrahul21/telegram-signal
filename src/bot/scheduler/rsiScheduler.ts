@@ -95,13 +95,13 @@ export const checkRSIOverbought = async (
     14
   );
   const currentRSI = rsiValues[rsiValues.length - 1];
-  const mostRecentIndex = 0;
+  const mostRecentIndex = candles.length - 1;
   const signals: RSISignal[] = [];
 
   if (currentRSI >= config.RSI_EXTREME_OVERBOUGHT) {
     signals.push({
       type: `${keyName} RSI Extreme Overbought`,
-      time: candles[mostRecentIndex].time,
+      time: candles[mostRecentIndex].closeTime,
       price: candles[mostRecentIndex].close,
       rsi: currentRSI,
       details: `RSI is extremely overbought at ${currentRSI.toFixed(
@@ -137,13 +137,13 @@ export const checkRSIOversold = async (
     14
   );
   const currentRSI = rsiValues[rsiValues.length - 1];
-  const mostRecentIndex = 0;
+  const mostRecentIndex = candles.length - 1;
   const signals: RSISignal[] = [];
 
   if (currentRSI <= config.RSI_EXTREME_OVERSOLD) {
     signals.push({
       type: `${keyName} RSI Extreme Oversold`,
-      time: candles[mostRecentIndex].time,
+      time: candles[mostRecentIndex].closeTime,
       price: candles[mostRecentIndex].close,
       rsi: currentRSI,
       details: `RSI is extremely oversold at ${currentRSI.toFixed(

@@ -25,10 +25,8 @@ setInterval(async () => {
     const response = await axios.get(
       "https://telegram-signal-suva.onrender.com/"
     );
-    console.log(response.data);
+    // console.log(response.data);
   } catch (error) {
-    console.log("error", error);
+    console.log("error on making self request", error);
   }
 }, 1000 * 60 * 10);
-
-
