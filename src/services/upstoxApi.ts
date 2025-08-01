@@ -5,6 +5,7 @@ import { CandleDataModal, CandleData } from "../models/candleData";
 import { UpstoxInterval } from "../types/Duration";
 import "dotenv/config";
 import config from "../config";
+import { logger } from "../logger";
 
 export const aggregateToHourlyCandles = (data: CandleData[]): CandleData[] => {
   // Initialize an array to hold the aggregated hourly candles
@@ -95,8 +96,12 @@ export const aggregateToDayCandle = (
   intradayCandles: CandleData[]
 ): CandleData => {
   // Ensure the input list is not empty
-  if (!intradayCandles || intradayCandles.length === 0) {
+  if (!intradayCandles) {
     throw new Error("No intraday candles provided");
+  }
+  if(intradayCandles.length === 0){
+    logger("intraday Candles found empty", 'yellow')
+    return null;
   }
   const firstCandle = intradayCandles[intradayCandles.length - 1];
   const lastCandle = intradayCandles[0];

@@ -43,7 +43,7 @@ async function getStockHistoricalCandles(
       UpstoxInterval.OneHour
     );
     historicalCandles = [
-      aggregateToDayCandle(intradayCandles),
+      ...(intradayCandles && !!intradayCandles.length  ? [aggregateToDayCandle(intradayCandles)] : []),
       ...historicalCandles,
     ];
   }
