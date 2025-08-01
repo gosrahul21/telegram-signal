@@ -1,30 +1,31 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CandleDataModal = CandleDataModal;
 // Define the CandleDataModal function
 function CandleDataModal(apiResponse) {
     // Initialize an array to store the transformed data
-    var candleDataArray = [];
+    const candleDataArray = [];
     // Check if the API response is valid and contains candle data
     if (apiResponse && apiResponse.data && apiResponse.data.candles) {
         // Iterate through each candle data point in the API response
-        apiResponse.data.candles.forEach(function (candle) {
+        apiResponse.data.candles.forEach((candle) => {
             // Extract the properties from each candle data point
-            var timestamp = candle[0];
-            var open = candle[1];
-            var high = candle[2];
-            var low = candle[3];
-            var close = candle[4];
-            var volume = candle[5];
-            var openInterest = candle[6];
+            const timestamp = candle[0];
+            const open = candle[1];
+            const high = candle[2];
+            const low = candle[3];
+            const close = candle[4];
+            const volume = candle[5];
+            const openInterest = candle[6];
             // Create a CandleData object
-            var candleData = {
-                timestamp: timestamp,
-                open: open,
-                high: high,
-                low: low,
-                close: close,
-                volume: volume,
-                openInterest: openInterest
+            const candleData = {
+                closeTime: timestamp,
+                open,
+                high,
+                low,
+                close,
+                volume,
+                openInterest
             };
             // Add the CandleData object to the array
             candleDataArray.push(candleData);
@@ -33,4 +34,3 @@ function CandleDataModal(apiResponse) {
     // Return the array of transformed candle data
     return candleDataArray;
 }
-exports.CandleDataModal = CandleDataModal;

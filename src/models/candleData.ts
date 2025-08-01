@@ -1,6 +1,6 @@
 // Import the CandleData interface
 export interface CandleData {
-    timestamp: string;  // The start time of the candle's timeframe in ISO format
+    closeTime: string;  // The start time of the candle's timeframe in ISO format
     open: number;       // The opening price of the asset for the given timeframe
     high: number;       // The highest price at which the asset traded during the timeframe
     low: number;        // The lowest price at which the asset traded during the timeframe
@@ -29,7 +29,7 @@ export function CandleDataModal(apiResponse: any): CandleData[] {
 
             // Create a CandleData object
             const candleData: CandleData = {
-                timestamp,
+                closeTime: timestamp,
                 open,
                 high,
                 low,

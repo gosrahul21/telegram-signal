@@ -4,6 +4,7 @@ import axios from "axios";
 import { CandleDataModal, CandleData } from "../models/candleData";
 import { UpstoxInterval } from "../types/Duration";
 import "dotenv/config";
+import config from "../config";
 
 export const aggregateToHourlyCandles = (data: CandleData[]): CandleData[] => {
   // Initialize an array to hold the aggregated hourly candles
@@ -18,7 +19,7 @@ export const aggregateToHourlyCandles = (data: CandleData[]): CandleData[] => {
 
     if (i + 1 >= data.length) {
       const hourlyCandle: CandleData = {
-        timestamp: secondCandle.timestamp, // Use the timestamp of the first 30-minute candle
+        closeTime: secondCandle.closeTime, // Use the timestamp of the first 30-minute candle
         open: secondCandle.open, // Open price is the open of the first 30-minute candle
         high: secondCandle.high, // High price is the max of the highs from both 30-minute candles
         low: secondCandle.low, // Low price is the min of the lows from both 30-minute candles
@@ -32,7 +33,7 @@ export const aggregateToHourlyCandles = (data: CandleData[]): CandleData[] => {
 
     // Aggregate the data into a 1-hour candle
     const hourlyCandle: CandleData = {
-      timestamp: firstCandle.timestamp, // Use the timestamp of the first 30-minute candle
+      closeTime: firstCandle.closeTime, // Use the timestamp of the first 30-minute candle
       open: firstCandle.open, // Open price is the open of the first 30-minute candle
       high: Math.max(firstCandle.high, secondCandle.high), // High price is the max of the highs from both 30-minute candles
       low: Math.min(firstCandle.low, secondCandle.low), // Low price is the min of the lows from both 30-minute candles
@@ -53,22 +54,16 @@ export const fetchCandleHistory = async (
   instrumentKey: string,
   interval: UpstoxInterval,
   toDate: string, // yyyy-mm-dd
-  fromDate: string // yyyy-mm-dd
+  // fromDate: string // yyyy-mm-dd
 ): Promise<CandleData[]> => {
   try {
     // Construct the URL
-    const url = `${process.env.UPSTOX_API_BASE}/historical-candle/${instrumentKey}/${interval}/${toDate}/${fromDate}`;
+    const url = `${config.UPSTOX_API_BASE}/historical-candle/${instrumentKey}/${interval}/${toDate}`;
     // Fetch the data
     const response: any = await axios.get(url);
     const data = await response.data;
     // Convert the data using the CandleDataModal function
     const candleData = CandleDataModal(data);
-
-    // If interval is 30 minutes, convert to hourly candles
-    if (interval === UpstoxInterval.ThirtyMinutes) {
-      return aggregateToHourlyCandles(candleData);
-    }
-    // Return the candle data if no conversion is needed
     return candleData;
   } catch (error) {
     console.log(`Error in fetching candle history of ${instrumentKey}:`, error);
@@ -77,17 +72,19 @@ export const fetchCandleHistory = async (
 };
 
 // hourly intraday candles
-export const getIntradayCandles = async (instrumentKey: string) => {
+export const getIntradayCandles = async (
+  instrumentKey: string,
+  interval: UpstoxInterval
+) => {
   try {
     // Construct the URL
-    const url = `${process.env.UPSTOX_API_BASE}/historical-candle/intraday/${instrumentKey}/30minute`;
+    const url = `${config.UPSTOX_API_BASE}/historical-candle/intraday/${instrumentKey}/${interval}`;
     // Fetch the data
     const response: any = await axios.get(url);
     const data = await response.data;
     // Convert the data using the CandleDataModal function
     const candleData = CandleDataModal(data);
-    // If interval is 30 minutes, convert to hourly candles
-    return aggregateToHourlyCandles(candleData);
+    return candleData;
   } catch (error) {
     console.log(`Error in fetching candle history of ${instrumentKey}:`, error);
     return [];
@@ -105,7 +102,7 @@ export const aggregateToDayCandle = (
   const lastCandle = intradayCandles[0];
   // Initialize variables for aggregation
   let dailyCandle: CandleData = {
-    timestamp: lastCandle.timestamp, // Use the timestamp of the first candle as the daily candle's timestamp
+    closeTime: lastCandle.closeTime, // Use the timestamp of the first candle as the daily candle's timestamp
     open: firstCandle.open, // Open price is the open of the first candle
     high: lastCandle.high, // Start with the first candle's high price
     low: lastCandle.low, // Start with the first candle's low price

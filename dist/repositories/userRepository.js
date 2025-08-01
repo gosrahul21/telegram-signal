@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const user_1 = require("../models/user");
-// Define the UserService class
-class UserService {
+// Define the UserRepository class
+class UserRepository {
     constructor() {
         this.subscribedUsers = [];
         this.fetchSubscribedUsers();
@@ -45,10 +45,13 @@ class UserService {
         }
     }
     // Method to delete a user by their ID
-    async deleteUser(userId) {
+    async deleteUser(chatId) {
         try {
             // Delete the user from the database
-            const deletedUser = await user_1.User.findByIdAndDelete(userId).lean().lean();
+            const deletedUser = await user_1.User.findOneAndDelete({ chatId }).lean().lean();
+            if (deletedUser) {
+                this.subscribedUsers = this.subscribedUsers.filter((subscribedUser) => subscribedUser.chatId !== (chatId));
+            }
             // Return the deleted user
             return deletedUser;
         }
@@ -108,4 +111,4 @@ class UserService {
     }
 }
 // Export the UserService class
-exports.default = new UserService();
+exports.default = new UserRepository();

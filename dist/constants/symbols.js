@@ -1,5 +1,6 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.instrumentMapping = exports.symbol = void 0;
 exports.symbol = [
     "B-LQTY_USDT",
     "B-ENA_USDT",
@@ -268,15 +269,13 @@ exports.symbol = [
     "B-MTL_USDT",
     "B-OGN_USDT",
     "B-NKN_USDT",
-    "B-1000SHIB_USDT"
+    "B-1000SHIB_USDT",
 ];
 exports.instrumentMapping = {
-    RVNL: 'NSE_EQ|INE415G01027',
-    RELIANCE: 'NSE_EQ|INE002A01018',
-    IOB: 'NSE_EQ|INE565A01014',
-    NHPC: 'NSE_EQ|INE848E01016',
-    IRFC: 'NSE_EQ|INE053F01010',
-    MAHABANK: 'NSE_EQ|INE457A01014',
-    ASIANPAINTS: 'NSE_EQ|INE021A01026',
-    IRCTC: 'NSE_EQ|INE335Y01020'
+    SILVERBEES: "NSE_EQ|INF204KC1402",
+    GOLDBEES: "BSE_EQ|INF204KB17I5",
+    CDSL: "NSE_EQ|INE736A01011",
+    CAMS: "BSE_EQ|INE596I01012",
+    CONCOR: "NSE_EQ|INE111A01025",
+    NATIONALLUM: "NSE_EQ|INE139A01034",
 };

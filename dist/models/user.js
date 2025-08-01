@@ -1,48 +1,76 @@
 "use strict";
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
-exports.__esModule = true;
-var mongoose = __importStar(require("mongoose"));
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.User = void 0;
+const mongoose = __importStar(require("mongoose"));
 // Define the User schema
-var userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     chatId: {
         type: Number,
         required: true,
-        unique: true
+        unique: true,
     },
     telegramId: {
         type: Number,
         required: true,
-        unique: true
+        unique: true,
     },
     username: {
         type: String,
-        required: true
+        required: true,
     },
     subscriptions: [{
             pairName: {
                 type: String,
-                required: true
+                required: true,
             },
             duration: {
                 type: String,
-                "enum": ['1h', '4h', '1d'],
-                required: true
-            }
+                enum: ['1h', '4h', '1d'],
+                required: true,
+            },
+            // Add any additional fields you need for the subscription here
         }],
     // You can add more fields as needed
     createdAt: {
         type: Date,
-        "default": Date.now
+        default: Date.now,
     },
     updatedAt: {
         type: Date,
-        "default": Date.now
+        default: Date.now,
     }
 });
 // Create the User model using the schema

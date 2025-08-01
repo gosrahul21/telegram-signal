@@ -1,8 +1,8 @@
 "use strict";
-exports.__esModule = true;
-exports.logger = function (message, color) {
-    if (color === void 0) { color = "red"; }
-    var colorCode = {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.logger = void 0;
+const logger = (message, color = "red") => {
+    const colorCode = {
         red: 31,
         green: 32,
         yellow: 33,
@@ -11,5 +11,6 @@ exports.logger = function (message, color) {
         cyan: 36,
         white: 37
     }[color];
-    console.log("\u001B[" + colorCode + "m%s\u001B[0m", message);
+    console.log(`\x1b[${colorCode}m%s\x1b[0m`, message);
 };
+exports.logger = logger;
