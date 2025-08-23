@@ -1,46 +1,21 @@
-import * as mongoose from 'mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
 
 // Define the User schema
-const userSchema = new mongoose.Schema({
-    chatId: {
-        type: Number,
-        required: true,
-        unique: true,
-    },
-    telegramId: {
-        type: Number,
-        required: true,
-        unique: true,
-    },
-    username: {
-        type: String,
-        required: true,
-    },
-    subscriptions: [{
-        pairName: {
-            type: String,
-            required: true,
-        },
-        duration: {
-            type: String,
-            enum: ['1h', '4h', '1d'],
-            required: true,
-        },
-        // Add any additional fields you need for the subscription here
-    }],
-    // You can add more fields as needed
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
-    }
-});
+@Schema({ timestamps: true })
+export class User {
+  _id?: Types.ObjectId;
 
+  @Prop({ required: false, unique: true, index: true })
+  telegramId: number;
 
-// Create the User model using the schema
-export const User = mongoose.model('User', userSchema);
+  @Prop({ required: false, unique: true, index: true })
+  username: string;
 
-export type UserDocument = typeof User & mongoose.Document;
+  @Prop({ required: true, minlength: 6 })
+  password: string;
+}
+
+export type UserDocument = Document & User;
+
+export const UserSchema = SchemaFactory.createForClass(User);

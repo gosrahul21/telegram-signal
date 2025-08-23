@@ -18,3 +18,4 @@ exports.default = {
     RSI_EXTREME_OVERSOLD,
     RSI_OVERSOLD_THRESHOLD,
 };
+//# sourceMappingURL=index.js.map

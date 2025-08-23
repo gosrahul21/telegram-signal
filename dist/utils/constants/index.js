@@ -541,3 +541,4 @@ exports.keyPairsMapping = {
     NKNUSDT: "B-NKN_USDT",
     "1000SHIBUSDT": "B-1000SHIB_USDT",
 };
+//# sourceMappingURL=index.js.map

@@ -14,3 +14,4 @@ const logger = (message, color = "red") => {
     console.log(`\x1b[${colorCode}m%s\x1b[0m`, message);
 };
 exports.logger = logger;
+//# sourceMappingURL=index.js.map

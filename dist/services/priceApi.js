@@ -1,29 +1,8 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchCandleData = fetchCandleData;
 exports.fetchTickerPrice = fetchTickerPrice;
-const axios_1 = __importDefault(require("axios"));
-// // Function to fetch candle data from the Coindcx API
-// export async function fetchCandleData(pair: string, interval: Duration) {
-//     try {
-//         const url = `https://public.coindcx.com/market_data/candles/?pair=${pair}&interval=${interval}`;
-//         const response: any = await axios.get(url);
-//         const data = await response.data;
-//         return data;
-//     } catch (error) {
-//         console.log(error);
-//     }
-// }
-// export async function fetchTickerPrice() {
-//     const url = `https://api.coindcx.com/exchange/ticker/`;
-//     const response: any = await axios.get(url);
-//     const data = await response.data;
-//     return data;
-// }
-// Function to fetch candlestick (OHLC) data from Binance API
+const axios_1 = require("axios");
 async function fetchCandleData(symbol, interval) {
     try {
         const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}`;
@@ -39,11 +18,10 @@ async function fetchCandleData(symbol, interval) {
         }));
     }
     catch (error) {
-        console.error("Error fetching Binance candle data:", error);
+        console.error('Error fetching Binance candle data:', error);
         return null;
     }
 }
-// Function to fetch the latest ticker price from Binance API
 async function fetchTickerPrice(symbol) {
     try {
         const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
@@ -51,7 +29,8 @@ async function fetchTickerPrice(symbol) {
         return response.data;
     }
     catch (error) {
-        console.error("Error fetching Binance ticker price:", error);
+        console.error('Error fetching Binance ticker price:', error);
         return null;
     }
 }
+//# sourceMappingURL=priceApi.js.map

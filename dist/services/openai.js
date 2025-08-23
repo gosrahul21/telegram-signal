@@ -1,25 +1,15 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-require("dotenv").config(); // Load environment variables
+require("dotenv").config();
 const techincalIndicators_1 = require("../utils/helper/techincalIndicators");
-const fs_1 = __importDefault(require("fs"));
-// const { Configuration, OpenAIApi } = require("openai");
-const openai_1 = __importDefault(require("openai"));
-// Set up OpenAI configuration
-// const configuration = new Configuration({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
-// const openai = new OpenAIApi(configuration);
+const fs_1 = require("fs");
+const openai_1 = require("openai");
 const OPENAI_API_KEY = "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";
 const client = new openai_1.default({
     apiKey: OPENAI_API_KEY,
 });
 async function getTechnicalAnalysis(data) {
     try {
-        // Construct the prompt
         const prompt = `
     You are a financial analyst specializing in technical analysis.
     
@@ -35,9 +25,8 @@ async function getTechnicalAnalysis(data) {
     
     Keep responses **brief, actionable, and data-driven**.
     `;
-        // Send the prompt to OpenAI
         const completion = await client.chat.completions.create({
-            model: "gpt-4o-mini", // Use 'gpt-3.5-turbo' if GPT-4 is not available
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "system",
@@ -45,11 +34,8 @@ async function getTechnicalAnalysis(data) {
                 },
                 { role: "user", content: prompt },
             ],
-            //   max_tokens: 500, // Adjust based on the desired response length
         });
-        // Extract and return the response
         const analysis = completion.choices[0].message.content;
-        // Save response to a file
         return analysis;
     }
     catch (error) {
@@ -74,15 +60,7 @@ const main = async (symbol) => {
  provide technical analysis with overall market prediction
 .
   `;
-    //   console.log(finalPrompt);
     fs_1.default.writeFileSync(`prompt_${symbol}.txt`, finalPrompt, "utf8");
-    // Call the function and log the result
-    //   getTechnicalAnalysis(prompt)
-    //     .then((analysis) => {
-    //       fs.writeFileSync("technical_analysis.txt", analysis as any, "utf8");
-    //     })
-    //     .catch((error) => {
-    //       console.error("Error:", error);
-    //     });
 };
 main("SUIUSDT");
+//# sourceMappingURL=openai.js.map

@@ -1,5 +1,5 @@
-import { Duration } from "../types/Duration";
-import axios from "axios";
+import { Duration } from '@/types/Duration';
+import axios from 'axios';
 
 // // Function to fetch candle data from the Coindcx API
 // export async function fetchCandleData(pair: string, interval: Duration) {
@@ -35,7 +35,7 @@ export async function fetchCandleData(symbol: string, interval: string) {
       closeTime: candle[6],
     }));
   } catch (error) {
-    console.error("Error fetching Binance candle data:", error);
+    console.error('Error fetching Binance candle data:', error);
     return null;
   }
 }
@@ -47,7 +47,7 @@ export async function fetchTickerPrice(symbol: string) {
     const response = await axios.get(url);
     return response.data;
   } catch (error) {
-    console.error("Error fetching Binance ticker price:", error);
+    console.error('Error fetching Binance ticker price:', error);
     return null;
   }
 }

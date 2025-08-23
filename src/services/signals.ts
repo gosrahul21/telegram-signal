@@ -1,8 +1,8 @@
-import { Duration } from "../types/Duration";
-import { keyPairsMapping } from "../utils/constants";
-import { fetchCandleData, fetchTickerPrice } from "./priceApi";
-import { calculateRSI } from "../utils/helper/techincalIndicators";
-const ema = require("exponential-moving-average");
+import { Duration } from '@/types/Duration';
+import { keyPairsMapping } from '../utils/constants';
+import { fetchCandleData, fetchTickerPrice } from './priceApi';
+import { calculateRSI } from '../utils/helper/techincalIndicators';
+const ema = require('exponential-moving-average');
 
 interface CandleData {
   open: number;
@@ -15,7 +15,7 @@ interface CandleData {
 
 export function calculateEMA(
   candlePrices: { close: number }[],
-  duration: number
+  duration: number,
 ) {
   const arr = candlePrices.map((candle: any) => candle.close);
   arr.reverse();
@@ -35,7 +35,7 @@ export function generateCrossSignals(
   ema21: Array<number>,
   ema20: Array<number>,
   ema50: Array<number>,
-  getTrend = false
+  getTrend = false,
 ) {
   // Array to hold buy signals
   const signals = [];
@@ -49,10 +49,10 @@ export function generateCrossSignals(
     ema9[mostRecentIndex + 1] <= ema21[mostRecentIndex + 1]
   ) {
     const signal = {
-      type: "EMA crossover 9/21",
+      type: 'EMA crossover 9/21',
       time: prices[mostRecentIndex].time,
       price: prices[mostRecentIndex].close,
-      details: "9 EMA crossed above 21 EMA, buy/long signal",
+      details: '9 EMA crossed above 21 EMA, buy/long signal',
     };
     signals.push(signal);
   } else if (
@@ -60,18 +60,18 @@ export function generateCrossSignals(
     ema9[mostRecentIndex + 1] >= ema21[mostRecentIndex + 1]
   ) {
     signals.push({
-      type: "EMA crossover 9/21",
+      type: 'EMA crossover 9/21',
       time: prices[mostRecentIndex].time,
       price: prices[mostRecentIndex].close,
-      details: "21 EMA crossed above 9 EMA, sell/short signal",
+      details: '21 EMA crossed above 9 EMA, sell/short signal',
     });
   } else if (getTrend) {
     signals.push({
-      type: "EMA crossover 9/21",
+      type: 'EMA crossover 9/21',
       time: prices[mostRecentIndex].time,
       price: prices[mostRecentIndex].close,
       details: `${
-        ema9[mostRecentIndex] < ema21[mostRecentIndex] ? "downtrend" : "uptrend"
+        ema9[mostRecentIndex] < ema21[mostRecentIndex] ? 'downtrend' : 'uptrend'
       }`,
     });
   }
@@ -82,28 +82,28 @@ export function generateCrossSignals(
     ema20[mostRecentIndex + 1] <= ema50[mostRecentIndex + 1]
   ) {
     signals.push({
-      type: "EMA crossover 20/50",
+      type: 'EMA crossover 20/50',
       time: prices[mostRecentIndex].time,
       price: prices[mostRecentIndex].close,
-      details: "20 EMA crossed above 50 EMA",
+      details: '20 EMA crossed above 50 EMA',
     });
   } else if (
     ema20[mostRecentIndex] < ema50[mostRecentIndex] &&
     ema20[mostRecentIndex + 1] >= ema50[mostRecentIndex + 1]
   ) {
     signals.push({
-      type: "EMA crossover 20/50",
+      type: 'EMA crossover 20/50',
       time: prices[mostRecentIndex].time,
       price: prices[mostRecentIndex].close,
-      details: "21 EMA crossed above 9 EMA, sell/short signal",
+      details: '21 EMA crossed above 9 EMA, sell/short signal',
     });
   } else if (getTrend) {
     signals.push({
-      type: "EMA crossover 20/50",
+      type: 'EMA crossover 20/50',
       time: prices[mostRecentIndex].time,
       price: prices[mostRecentIndex].close,
       details: `${
-        ema9[mostRecentIndex] < ema21[mostRecentIndex] ? "downtrend" : "uptrend"
+        ema9[mostRecentIndex] < ema21[mostRecentIndex] ? 'downtrend' : 'uptrend'
       }`,
     });
   }
@@ -121,7 +121,7 @@ export const checkIfPriceNearEma = (prices: any, ema: any) => {
 
   if (priceToEMA9Ratio < proximityThreshold) {
     signals.push({
-      type: "Price near 9 EMA",
+      type: 'Price near 9 EMA',
       time: prices[mostRecentIndex].time,
       price: prices[mostRecentIndex].close,
       details: `Price is within ${proximityThreshold * 100}% of 9 EMA`,
@@ -167,7 +167,7 @@ export const generateSignal = async (keyname: string, duration: Duration) => {
 export const priceAwayFromAverage = async (
   keyName: string,
   pairName: string,
-  duration: Duration
+  duration: Duration,
 ) => {
   const prices: any = await fetchTickerPrice(keyName);
   const price = prices.find((price: any) => price.market === keyName);
@@ -191,14 +191,14 @@ export const priceAwayFromAverage = async (
 };
 
 export const getTrend = (emasShort: number[], emasLong: number[]) => {
-  return emasShort[0] > emasLong[0] ? "UPTREND" : "DOWNTREND";
+  return emasShort[0] > emasLong[0] ? 'UPTREND' : 'DOWNTREND';
 };
 
 export const getSmallSignal = async (
   keyname: string,
   duration: Duration,
   emaShort: number,
-  emaLong: number
+  emaLong: number,
 ) => {
   const pairname = keyPairsMapping[keyname];
   const candles: any = await fetchCandleData(pairname, duration);
@@ -230,7 +230,7 @@ export const getSmallSignal = async (
   const recentCandle: CandleData = candles[mostRecentIndex];
   const secondRecentCandle: CandleData = candles[mostRecentIndex + 1];
   const trend = getTrend(emasShort, emasLong);
-  if (trend === "UPTREND") {
+  if (trend === 'UPTREND') {
     if (
       secondRecentCandle.close >= emasShort[mostRecentIndex + 1] &&
       recentCandle.close < emasShort[mostRecentIndex]
@@ -241,7 +241,7 @@ export const getSmallSignal = async (
         time: candles[mostRecentIndex].time,
         price: candles[mostRecentIndex].close,
         details:
-          "trend may change, from downtrend to uptrend, take decision wisely ",
+          'trend may change, from downtrend to uptrend, take decision wisely ',
       });
     }
   } else {
@@ -255,7 +255,7 @@ export const getSmallSignal = async (
         time: candles[mostRecentIndex].time,
         price: candles[mostRecentIndex].close,
         details:
-          "trend may change, from downtrend to uptrend, take decision wisely ",
+          'trend may change, from downtrend to uptrend, take decision wisely ',
       });
     }
   }
@@ -267,7 +267,7 @@ export const getRSIOverbought = async (keyname: string, duration: Duration) => {
   const candles: any = await fetchCandleData(keyname, duration);
   const rsi = calculateRSI(
     candles.map((candle: any) => candle.close),
-    14
+    14,
   );
   return rsi;
 };

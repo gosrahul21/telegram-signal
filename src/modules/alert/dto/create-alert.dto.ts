@@ -1,0 +1,44 @@
+import { IsString, IsEnum, IsNumber, IsOptional, IsArray, IsObject, Min, Max, IsBoolean } from 'class-validator';
+import { AlertType, Timeframe } from '../alert.entity';
+
+export class CreateAlertDto {
+  @IsString()
+  symbol: string;
+
+  // @IsString()
+  // userId: string;
+
+  @IsEnum(AlertType)
+  type: AlertType;
+
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  count: number;
+
+  @IsOptional()
+  @IsBoolean()
+  eternalCount?: boolean;
+
+  @IsEnum(Timeframe)
+  timeframe: Timeframe;
+
+  @IsOptional()
+  @IsObject()
+  conditions?: Record<string, any>;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+
+  userId?: string
+}

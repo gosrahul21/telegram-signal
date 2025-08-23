@@ -1,10 +1,10 @@
 // TESTED - Ok
 
-import axios from "axios";
-import { CandleDataModal, CandleData } from "../models/candleData";
-import { UpstoxInterval } from "../types/Duration";
-import "dotenv/config";
-import config from "../config";
+import axios from 'axios';
+import { CandleDataModal, CandleData } from '../models/candleData';
+import { UpstoxInterval } from '@/types/Duration';
+import 'dotenv/config';
+import config from '../config';
 
 export const aggregateToHourlyCandles = (data: CandleData[]): CandleData[] => {
   // Initialize an array to hold the aggregated hourly candles
@@ -74,7 +74,7 @@ export const fetchCandleHistory = async (
 // hourly intraday candles
 export const getIntradayCandles = async (
   instrumentKey: string,
-  interval: UpstoxInterval
+  interval: UpstoxInterval,
 ) => {
   try {
     // Construct the URL
@@ -92,11 +92,11 @@ export const getIntradayCandles = async (
 };
 
 export const aggregateToDayCandle = (
-  intradayCandles: CandleData[]
+  intradayCandles: CandleData[],
 ): CandleData => {
   // Ensure the input list is not empty
   if (!intradayCandles || intradayCandles.length === 0) {
-    throw new Error("No intraday candles provided");
+    throw new Error('No intraday candles provided');
   }
   const firstCandle = intradayCandles[intradayCandles.length - 1];
   const lastCandle = intradayCandles[0];

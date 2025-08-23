@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { Bot } from "grammy";
-import userRepository from "../../repositories/userRepository";
+// import userRepository from "../../repositories/userRepository";
 
 export interface RSIStatus {
   type:
@@ -35,7 +35,8 @@ export const renderRSIStatus = async (
   bot: Bot,
   duration: string
 ): Promise<void> => {
-  const subscribedUsers: any = userRepository.getSubscribedUsers();
+  // const subscribedUsers: any = userRepository.getSubscribedUsers();
+  const subscribedUsers: any = [];
 
   const message = `
 <b>RSI Signal for ${pairName} - ${duration}</b>

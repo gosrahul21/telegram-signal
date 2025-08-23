@@ -6,15 +6,12 @@ exports.calculateRSI = calculateRSI;
 exports.calculateMACD = calculateMACD;
 const priceApi_1 = require("../../services/priceApi");
 const ti = require("technicalindicators");
-// Calculate EMA
 function calculateEMA(prices, period) {
     return ti.EMA.calculate({ period, values: prices });
 }
-// Calculate RSI (Relative Strength Index)
 function calculateRSI(prices, period = 14) {
     return ti.RSI.calculate({ period, values: prices });
 }
-// Calculate MACD (12, 26, 9)
 function calculateMACD(prices) {
     return ti.MACD.calculate({
         values: prices,
@@ -28,7 +25,6 @@ function calculateMACD(prices) {
 const getIndicatorOnTimeFrame = async (symbol, timeframe) => {
     const candleData = await (0, priceApi_1.fetchCandleData)(symbol, timeframe);
     const prices = candleData.map(({ close }) => close);
-    // Get last 7 values from each indicator
     const macdResult = calculateMACD(prices).slice(-7);
     const ema9Series = calculateEMA(prices, 9).slice(-7);
     const ema20Series = calculateEMA(prices, 20).slice(-7);
@@ -44,3 +40,4 @@ const getIndicatorOnTimeFrame = async (symbol, timeframe) => {
     return indicatorDetails;
 };
 exports.getIndicatorOnTimeFrame = getIndicatorOnTimeFrame;
+//# sourceMappingURL=techincalIndicators.js.map

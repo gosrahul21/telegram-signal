@@ -1,12 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CoindcxService = void 0;
-const axios_1 = __importDefault(require("axios"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const getSignature_1 = __importDefault(require("./getSignature"));
+const axios_1 = require("axios");
+const dotenv_1 = require("dotenv");
+const getSignature_1 = require("./getSignature");
 dotenv_1.default.config();
 class CoindcxService {
     constructor() {
@@ -74,7 +71,6 @@ class CoindcxService {
         }
         catch (error) {
             if (axios_1.default.isAxiosError(error)) {
-                // console.log(error.response && error.response);
                 throw new Error(`Failed to create futures order: ${error.message}`);
             }
             throw error;
@@ -200,3 +196,4 @@ class CoindcxService {
     }
 }
 exports.CoindcxService = CoindcxService;
+//# sourceMappingURL=CoindcxService.js.map

@@ -2,22 +2,21 @@ import {
   Bot,
 } from "grammy";
 
-import { onSubscribe } from "./commandHandlers/onSubscribe";
+// import { onSubscribe } from "./commandHandlers/onSubscribe";
 import { hourStatus } from "./commandHandlers/hourStatusHandler";
 import { fourHourStatus } from "./commandHandlers/fourHourStatusHandler";
 import { dayStatus } from "./commandHandlers/dayStatusHandler";
-import { unSubscribe } from "./commandHandlers/unsubscribeHandler";
 import { rsiScheduler } from "./scheduler/rsiScheduler";
 
 export const initializeBot = () => {
   const bot = new Bot(process.env.BOT_TOKEN!);
 
   bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
-  bot.command("subscribe", (ctx)=>onSubscribe(ctx))
+  // bot.command("subscribe", (ctx)=>onSubscribe(ctx))
   bot.command("hourstatus", hourStatus)
   bot.command("quarterhrstatus", fourHourStatus)
   bot.command("daystatus", dayStatus)
-  bot.command("unsubscribe", unSubscribe)
+  // bot.command("unsubscribe", unSubscribe)
   // bot.command("rsi", getRSIStatus)
   // bot.command('subscribeob', overBoughtSignal)
 

@@ -1,17 +1,17 @@
-import { instrumentMapping } from "../constants/symbols";
-import { UpstoxInterval } from "../types/Duration";
-import formatDate from "../utils/helper/formatDate";
+import { instrumentMapping } from '../constants/symbols';
+import { UpstoxInterval } from '@/types/Duration';
+import formatDate from '../utils/helper/formatDate';
 import {
   aggregateToDayCandle,
   fetchCandleHistory,
   getIntradayCandles,
-} from "./upstoxApi";
-import { CandleData } from "../models/candleData";
+} from './upstoxApi';
+import { CandleData } from '../models/candleData';
 
 // to be tested
 async function getStockHistoricalCandles(
   symbol: string,
-  interval: UpstoxInterval
+  interval: UpstoxInterval,
 ): Promise<CandleData[]> {
   // Iterate through each instrument in the instrument mapping
   // Calculate the toDate as current date
@@ -19,11 +19,12 @@ async function getStockHistoricalCandles(
 
   // Format the dates to "yyyy:mm:dd" format
   const formattedToDate = formatDate(toDate); //current date
-  const intrumentKey = instrumentMapping[symbol as keyof typeof instrumentMapping];
+  const intrumentKey =
+    instrumentMapping[symbol as keyof typeof instrumentMapping];
   let historicalCandles = await fetchCandleHistory(
     intrumentKey,
     interval,
-    formattedToDate
+    formattedToDate,
   );
 
   if (interval === UpstoxInterval.OneHour) {
@@ -40,7 +41,7 @@ async function getStockHistoricalCandles(
   } else if (interval === UpstoxInterval.OneDay) {
     const intradayCandles = await getIntradayCandles(
       intrumentKey,
-      UpstoxInterval.OneHour
+      UpstoxInterval.OneHour,
     );
     historicalCandles = [
       aggregateToDayCandle(intradayCandles),

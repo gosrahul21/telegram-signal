@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { instrumentMapping } from "../constants/symbols";
 
-const env = config();
+const env = config() as any;
 const RSI_OVERBOUGHT_THRESHOLD = 70;
 const RSI_OVERSOLD_THRESHOLD = 30;
 const RSI_EXTREME_OVERBOUGHT = 80;
