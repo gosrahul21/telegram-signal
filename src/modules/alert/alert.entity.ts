@@ -4,15 +4,25 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type AlertDocument = Alert & Document;
 
-export enum AlertType {
+/**
+ * This is the type of event that will trigger the alert or order
+ */
+export enum MonitorEventType {
   LIMIT = 'limit',
-  BOLLINGER_BANDS = 'bollinger_bands',
-  EMA = 'ema_crossover',
-  RSI = 'rsi',
-  MACD = 'macd',
-  STOCHASTIC = 'stochastic',
-  VOLUME = 'volume',
-  PRICE_ACTION = 'price_action',
+  BOLLINGER_BANDS_LOW = 'bollinger_bands_low',
+  BOLLINGER_BANDS_HIGH = 'bollinger_bands_high',
+  EMA_LOW = 'ema_crossover_low',
+  EMA_HIGH = 'ema_crossover_high',
+  RSI_LOW = 'rsi_low',
+  RSI_CROSSOVER_HIGH = 'rsi_crossover_high',
+  MACD_CROSSOVER_LOW = 'macd_crossover_low',
+  MACD_CROSSOVER_HIGH = 'macd_crossover_high',
+  // STOCHASTIC_LOW = 'stochastic_low',
+  // STOCHASTIC_CROSSOVER_HIGH = 'stochastic_crossover_high',
+  // VOLUME_LOW = 'volume_low',
+  // VOLUME_HIGH = 'volume_high',
+  // PRICE_ACTION_LOW = 'price_action_low',
+  // PRICE_ACTION_HIGH = 'price_action_high',
 }
 
 export enum Timeframe {
@@ -33,11 +43,11 @@ export class Alert {
   @Prop({ required: true, type: Types.ObjectId, ref: 'User' })
   userId: Types.ObjectId;
 
-  @Prop({ required: true, enum: AlertType })
-  type: AlertType;
+  @Prop({ required: true, enum: MonitorEventType })
+  eventType: MonitorEventType;
 
-  @Prop({ required: true, min: 1, max: 10 })
-  count: number;
+  @Prop({ required: true, min: 1})
+  count: number; // max number of times the alert to triggered
 
   @Prop({ required: true, unique: true, default: () => uuidv4() })
   uuid: string;
@@ -48,6 +58,9 @@ export class Alert {
   @Prop({ required: true, default: true })
   isActive: boolean;
 
+  @Prop({ required: true, default: false })
+  eternal: boolean; // if true, the alert will never expire
+
   @Prop({ type: Object })
   conditions: Record<string, any>;
 
@@ -55,7 +68,7 @@ export class Alert {
   lastTriggered?: Date;
 
   @Prop({ type: Number, default: 0 })
-  triggerCount: number;
+  triggerCount: number; // number of times the alert has been triggered
 
   @Prop({ type: String })
   description?: string;

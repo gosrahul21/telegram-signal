@@ -1,23 +1,36 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
-import { Cron, CronExpression } from '@nestjs/schedule';
-// import { AlertService, AlertCreatedEvent, AlertUpdatedEvent, AlertDeletedEvent, AlertStatusChangedEvent } from '../alert/alert.service';
 import { TechnicalAnalysisService } from './technical-analysis.service';
 import { PriceMonitoringService } from './price-monitoring.service';
 import { NotificationService } from './notification.service';
 import {
-  AlertCreatedEvent,
-  AlertDeletedEvent,
+  Alert,
   AlertService,
-  AlertStatusChangedEvent,
-  AlertUpdatedEvent,
+  MonitorEventType,
 } from '../alert';
+
+// Internal alert tracking structure - only for count management
+interface InternalAlert {
+  userId: string;
+  remainingCount: number;
+  isEternal: boolean;
+}
+
+type Symbol = string;
+type Timeframe = string;
+type AlertId = string;
 
 @Injectable()
 export class MonitoringService implements OnModuleInit {
   private readonly logger = new Logger(MonitoringService.name);
-  private activeAlerts = new Map<string, any>();
-  private monitoringIntervals = new Map<string, NodeJS.Timeout>();
+  
+  // Organized by symbol, timeframe, and monitor type - stores monitoring intervals and best count
+  private alertGroups = new Map<Symbol, Map<Timeframe, Map<MonitorEventType, {
+    count: number | "ETERNAL";
+    monitoringInterval: NodeJS.Timeout;
+  }>>>();
+
+  // Quick lookup for individual alerts - only for count tracking
+  private activeAlerts = new Map<Symbol, Map<Timeframe, Map<MonitorEventType, Map<AlertId, InternalAlert>>>>();
 
   constructor(
     private readonly alertService: AlertService,
@@ -31,308 +44,397 @@ export class MonitoringService implements OnModuleInit {
     this.loadActiveAlerts();
   }
 
-  // Listen to alert events
-  @OnEvent('alert.created')
-  async handleAlertCreated(event: AlertCreatedEvent) {
-    this.logger.log(
-      `New alert created: ${event.alert.symbol} - ${event.alert.type}`,
-    );
-
-    if (event.alert.isActive) {
-      await this.startMonitoringAlert(event.alert);
-    }
-  }
-
-  @OnEvent('alert.updated')
-  async handleAlertUpdated(event: AlertUpdatedEvent & any) {
-    this.logger.log(
-      `Alert updated: ${event.alert.symbol} - ${event.alert.type}`,
-    );
-
-    // Stop old monitoring if conditions changed significantly
-    if (
-      event.previousData &&
-      this.hasSignificantChanges(event.previousData, event.alert)
-    ) {
-      await this.stopMonitoringAlert(
-        event.previousData._id || event.previousData.id,
-      );
-    }
-
-    if (event.alert.isActive) {
-      await this.startMonitoringAlert(event.alert);
-    }
-  }
-
-  @OnEvent('alert.deleted')
-  async handleAlertDeleted(event: AlertDeletedEvent) {
-    this.logger.log(`Alert deleted: ${event.alertId}`);
-    await this.stopMonitoringAlert(event.alertId);
-  }
-
-  @OnEvent('alert.status.changed')
-  async handleAlertStatusChanged(event: AlertStatusChangedEvent & any) {
-    this.logger.log(
-      `Alert status changed: ${event.alert.symbol} - ${event.previousStatus} -> ${event.newStatus}`,
-    );
-
-    if (event.newStatus) {
-      await this.startMonitoringAlert(event.alert);
-    } else {
-      await this.stopMonitoringAlert(event.alert._id || event.alert.id);
-    }
-  }
-
-  // Listen to order events (you'll need to create these)
-  @OnEvent('order.created')
-  async handleOrderCreated(event: any) {
-    this.logger.log(`New order created: ${event.order.symbol}`);
-    await this.startMonitoringOrder(event.order);
-  }
-
-  @OnEvent('order.updated')
-  async handleOrderUpdated(event: any) {
-    this.logger.log(`Order updated: ${event.order.symbol}`);
-    await this.updateOrderMonitoring(event.order);
-  }
-
-  @OnEvent('order.filled')
-  async handleOrderFilled(event: any) {
-    this.logger.log(`Order filled: ${event.order.symbol}`);
-    await this.stopOrderMonitoring(event.order.id);
-  }
-
-  // Periodic monitoring check
-  @Cron(CronExpression.EVERY_30_SECONDS)
-  async performPeriodicChecks() {
-    this.logger.debug('Performing periodic monitoring checks');
-
-    for (const [alertId, alert] of this.activeAlerts) {
-      try {
-        await this.checkAlertConditions(alert);
-      } catch (error) {
-        this.logger.error(`Error checking alert ${alertId}:`, error);
-      }
-    }
-  }
-
-  private async loadActiveAlerts() {
-    try {
-      const activeAlerts = await this.alertService.findActiveAlerts();
-      for (const alert of activeAlerts) {
-        await this.startMonitoringAlert(alert);
-      }
-      this.logger.log(`Loaded ${activeAlerts.length} active alerts`);
-    } catch (error) {
-      this.logger.error('Error loading active alerts:', error);
-    }
-  }
-
-  private async startMonitoringAlert(alert: any) {
-    const alertId = alert._id || alert.id;
-
-    if (this.activeAlerts.has(alertId)) {
+  // Public methods for external use
+  async addAlertToMonitoring(alert: Alert) {
+    const alertId = alert.uuid;
+    
+    // Check if alert is already being monitored
+    if (this.activeAlerts.get(alert.symbol)?.get(alert.timeframe)?.get(alert.eventType)?.has(alertId)) {
       this.logger.warn(`Alert ${alertId} is already being monitored`);
       return;
     }
 
-    this.activeAlerts.set(alertId, alert);
+    // Create internal alert structure for count tracking
+    const internalAlert: InternalAlert = {
+      userId: alert.userId,
+      remainingCount: alert.count,
+      isEternal: alert.eternal || false,
+    };
 
+    // Add to active alerts for count tracking
+    this.setActiveAlertsMap(alert, internalAlert);
+
+    // Add to organized structure and start monitoring if needed
+    await this.organizeAlert(alert, internalAlert);
+
+    this.logger.log(`Started monitoring alert ${alertId} for ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`);
+  }
+
+  async removeAlertFromMonitoring(alertId: string) {
+    // Find the alert in the activeAlerts structure
+    for (const [symbol, timeframeMap] of this.activeAlerts) {
+      for (const [timeframe, eventTypeMap] of timeframeMap) {
+        for (const [eventType, alertMap] of eventTypeMap) {
+          if (alertMap.has(alertId)) {
+            const internalAlert = alertMap.get(alertId)!;
+            
+            // Remove from active alerts
+            alertMap.delete(alertId);
+
+            // Clean up empty maps
+            if (alertMap.size === 0) {
+              eventTypeMap.delete(eventType);
+            }
+            if (eventTypeMap.size === 0) {
+              timeframeMap.delete(timeframe);
+            }
+            if (timeframeMap.size === 0) {
+              this.activeAlerts.delete(symbol);
+            }
+
+            // Update alertGroups - check if we need to stop monitoring or update count
+            await this.updateAlertGroupsAfterRemoval(symbol, timeframe, eventType);
+
+            this.logger.log(`Stopped monitoring alert ${alertId}`);
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  private async updateAlertGroupsAfterRemoval(symbol: string, timeframe: string, eventType: MonitorEventType) {
+    const symbolMap = this.alertGroups.get(symbol);
+    if (!symbolMap) return;
+
+    const timeframeMap = symbolMap.get(timeframe);
+    if (!timeframeMap) return;
+
+    const groupData = timeframeMap.get(eventType);
+    if (!groupData) return;
+
+    // Check if there are any remaining alerts of this type
+    const remainingAlerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(eventType);
+    
+    if (!remainingAlerts || remainingAlerts.size === 0) {
+      // No more alerts of this type, stop monitoring and remove from groups
+      if (groupData.monitoringInterval) {
+        clearInterval(groupData.monitoringInterval);
+      }
+      timeframeMap.delete(eventType);
+      
+      // Clean up empty maps
+      if (timeframeMap.size === 0) {
+        symbolMap.delete(timeframe);
+      }
+      if (symbolMap.size === 0) {
+        this.alertGroups.delete(symbol);
+      }
+    } else {
+      // Update the count for remaining alerts
+      const newCount = this.getBestCountForAlertType(symbol, timeframe, eventType);
+      groupData.count = newCount;
+    }
+  }
+
+  private setActiveAlertsMap(alert: Alert, internalAlert: InternalAlert) {
+    const alertId = alert.uuid;
+    
+    // Add to active alerts for count tracking
+    if (!this.activeAlerts.has(alert.symbol)) {
+      this.activeAlerts.set(alert.symbol, new Map());
+    }
+    if (!this.activeAlerts.get(alert.symbol)!.has(alert.timeframe)) {
+      this.activeAlerts.get(alert.symbol)!.set(alert.timeframe, new Map());
+    }
+    if (!this.activeAlerts.get(alert.symbol)!.get(alert.timeframe)!.has(alert.eventType)) {
+      this.activeAlerts.get(alert.symbol)!.get(alert.timeframe)!.set(alert.eventType, new Map());
+    }
+
+    this.activeAlerts.get(alert.symbol)!.get(alert.timeframe)!.get(alert.eventType)!.set(alertId, internalAlert);
+  }
+
+  private async organizeAlert(alert: Alert, internalAlert: InternalAlert) {
+    if (!this.alertGroups.has(alert.symbol)) {
+      this.alertGroups.set(alert.symbol, new Map());
+    }
+
+    const symbolMap = this.alertGroups.get(alert.symbol)!;
+    if (!symbolMap.has(alert.timeframe)) {
+      symbolMap.set(alert.timeframe, new Map());
+    }
+
+    const timeframeMap = symbolMap.get(alert.timeframe)!;
+    if (!timeframeMap.has(alert.eventType)) {
+      // First alert of this type, start monitoring
+      const bestCount = this.getBestCountForAlertType(alert.symbol, alert.timeframe, alert.eventType);
+      const monitoringInterval = await this.startMonitoringByType(alert.symbol, alert.timeframe, alert.eventType);
+      
+      timeframeMap.set(alert.eventType, {
+        count: bestCount,
+        monitoringInterval,
+      });
+    } else {
+      // Update count for existing monitoring
+      const groupData = timeframeMap.get(alert.eventType)!;
+      const newCount = this.getBestCountForAlertType(alert.symbol, alert.timeframe, alert.eventType);
+      groupData.count = newCount;
+    }
+  }
+
+  private getBestCountForAlertType(symbol: string, timeframe: string, eventType: MonitorEventType): number | "ETERNAL" {
+    const alerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(eventType);
+    if (!alerts) return 1; // Default count
+    
+    const alertValues = Array.from(alerts.values());
+    const isEternal = alertValues.some(internalAlert => internalAlert.isEternal);
+    if (isEternal) return "ETERNAL";
+    
+    // if not eternal, return the max count
+    return Math.max(...alertValues.map(internalAlert => internalAlert.remainingCount));
+  }
+
+  private async startMonitoringByType(symbol: string, timeframe: string, eventType: MonitorEventType): Promise<NodeJS.Timeout> {
     // Start monitoring based on alert type
-    switch (alert.type) {
-      case 'limit':
-        await this.startPriceMonitoring(alert);
-        break;
-      case 'bollinger_bands':
-        await this.startBollingerBandsMonitoring(alert);
-        break;
-      case 'ema_crossover':
-        await this.startEMACrossoverMonitoring(alert);
-        break;
-      case 'rsi':
-        await this.startRSIMonitoring(alert);
-        break;
-      case 'macd':
-        await this.startMACDMonitoring(alert);
-        break;
+    switch (eventType) {
+      // case MonitorEventType.LIMIT:
+      //   return this.startPriceMonitoring(symbol, timeframe);
+
+      case MonitorEventType.BOLLINGER_BANDS_HIGH:
+      case MonitorEventType.BOLLINGER_BANDS_LOW:
+        return this.startBollingerBandsMonitoring(symbol, timeframe, eventType);
+
+      case MonitorEventType.EMA_LOW:
+      case MonitorEventType.EMA_HIGH:
+        return this.startEMACrossoverMonitoring(symbol, timeframe, eventType);
+
+      case MonitorEventType.RSI_LOW:
+      case MonitorEventType.RSI_CROSSOVER_HIGH:
+        return this.startRSIMonitoring(symbol, timeframe, eventType);
+
+      case MonitorEventType.MACD_CROSSOVER_LOW:
+      case MonitorEventType.MACD_CROSSOVER_HIGH:
+        return this.startMACDMonitoring(symbol, timeframe, eventType);
       default:
-        this.logger.warn(`Unknown alert type: ${alert.type}`);
+        this.logger.warn(`Unknown alert type: ${eventType}`);
+        return null as any;
     }
-
-    this.logger.log(`Started monitoring alert ${alertId} for ${alert.symbol}`);
   }
 
-  private async stopMonitoringAlert(alertId: string) {
-    if (!this.activeAlerts.has(alertId)) {
-      return;
+  // private startPriceMonitoring(symbol: string, timeframe: string): NodeJS.Timeout {
+  //   // Set up price monitoring interval for all alerts of this symbol/timeframe
+  //   const interval = setInterval(async () => {
+  //     try {
+  //       const alerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(MonitorEventType.LIMIT);
+  //       if (!alerts) return;
+
+  //       const currentPrice = await this.priceMonitoringService.getCurrentPrice(symbol);
+        
+  //       // Check all alerts of this type
+  //       for (const [alertId, internalAlert] of alerts) {
+  //         try {
+  //           // const alert = await this.alertService.findOne(alertId);
+  //           if (alert && alert.conditions?.targetPrice) {
+  //             if (this.checkPriceCondition(
+  //               currentPrice,
+  //               alert.conditions.targetPrice,
+  //               alert.conditions?.condition,
+  //             )) {
+  //               await this.triggerAlert(alert, internalAlert, { currentPrice, targetPrice: alert.conditions.targetPrice });
+  //             }
+  //           }
+  //         } catch (error) {
+  //           this.logger.error(`Error checking price alert ${alertId}:`, error);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       this.logger.error(`Error in price monitoring for ${symbol}:`, error);
+  //     }
+  //   }, this.getMonitoringInterval(timeframe));
+
+  //   return interval;
+  // }
+
+  private startBollingerBandsMonitoring(symbol: string, timeframe: string, eventType: MonitorEventType): NodeJS.Timeout {
+    const interval = setInterval(async () => {
+      try {
+        const alerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(eventType);
+        if (!alerts) return;
+        
+        const bbData = await this.technicalAnalysisService.getBollingerBands(symbol, timeframe);
+        const currentPrice = await this.priceMonitoringService.getCurrentPrice(symbol);
+        const isTriggered = this.checkBollingerBandsCondition(currentPrice, bbData, eventType);
+        if(isTriggered) {
+          // no need to trigger alert as it is not triggered
+          return;
+        }
+        // Check all alerts of this type
+        for (const [alertId, internalAlert] of alerts) {
+          try {
+            // const alert = await this.alertService.findOne(alertId);
+            // if (this.checkBollingerBandsCondition(currentPrice, bbData, eventType)) {
+              const alert = {
+                uuid: alertId,
+                symbol,
+                timeframe,
+                eventType,
+                count: internalAlert.remainingCount,
+                isActive: true,
+                userId: '1',
+                eternal: internalAlert.isEternal,
+              }
+              await this.triggerAlert(alert, internalAlert, { currentPrice, bbData });
+            // }
+          } catch (error) {
+            this.logger.error(`Error checking Bollinger Bands alert ${alertId}:`, error);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Error in Bollinger Bands monitoring for ${symbol}:`, error);
+      }
+    }, this.getMonitoringInterval(timeframe));
+
+    return interval;
+  }
+
+  private startEMACrossoverMonitoring(symbol: string, timeframe: string, eventType: MonitorEventType): NodeJS.Timeout {
+    const interval = setInterval(async () => {
+      try {
+        const alerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(eventType);
+        if (!alerts) return;
+
+        const emaData = await this.technicalAnalysisService.getEMACrossover(symbol, timeframe);
+        const isTriggered = this.checkEMACrossoverCondition(emaData, eventType);
+        if(isTriggered) {
+          // no need to trigger alert as it is not triggered
+          return;
+        }
+        // Check all alerts of this type
+        for (const [alertId, internalAlert] of alerts) {
+          try {
+            // const alert = await this.alertService.findOne(alertId);
+            // if (this.checkEMACrossoverCondition(emaData, eventType)) {
+              const alert = {
+                uuid: alertId,
+                symbol,
+                timeframe,
+                eventType,
+                count: internalAlert.remainingCount,
+                isActive: true,
+                userId: '1',
+                eternal: internalAlert.isEternal,
+              }
+              await this.triggerAlert(alert, internalAlert, { emaData });
+            // }
+          } catch (error) {
+            this.logger.error(`Error checking EMA alert ${alertId}:`, error);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Error in EMA crossover monitoring for ${symbol}:`, error);
+      }
+    }, this.getMonitoringInterval(timeframe));
+
+    return interval;
+  }
+
+  private startRSIMonitoring(symbol: string, timeframe: string, eventType: MonitorEventType): NodeJS.Timeout {
+    const interval = setInterval(async () => {
+      try {
+        const alerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(eventType);
+        if (!alerts) return;
+
+        const rsiData = await this.technicalAnalysisService.getRSI(symbol, timeframe);
+
+        // Check all alerts of this type
+        for (const [alertId, internalAlert] of alerts) {
+          try {
+            const alert = await this.alertService.findOne(alertId);
+            if (alert && this.checkRSICondition(rsiData, eventType === MonitorEventType.RSI_LOW?30:75,  eventType)) {
+              await this.triggerAlert(alert, internalAlert, { rsiData });
+            }
+          } catch (error) {
+            this.logger.error(`Error checking RSI alert ${alertId}:`, error);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Error in RSI monitoring for ${symbol}:`, error);
+      }
+    }, this.getMonitoringInterval(timeframe));
+
+    return interval;
+  }
+
+  private startMACDMonitoring(symbol: string, timeframe: string, eventType: MonitorEventType): NodeJS.Timeout {
+    const interval = setInterval(async () => {
+      try {
+        const alerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(eventType);
+        if (!alerts) return;
+
+        const macdData = await this.technicalAnalysisService.getMACD(symbol, timeframe);
+
+        // Check all alerts of this type
+        for (const [alertId, internalAlert] of alerts) {
+          try {
+            const alert = await this.alertService.findOne(alertId);
+            if (alert && this.checkMACDCondition(macdData,eventType)) {
+              await this.triggerAlert(alert, internalAlert, { macdData });
+            }
+          } catch (error) {
+            this.logger.error(`Error checking MACD alert ${alertId}:`, error);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Error in MACD monitoring for ${symbol}:`, error);
+      }
+    }, this.getMonitoringInterval(timeframe));
+
+    return interval;
+  }
+
+  private async triggerAlert(alert: {
+    symbol: string;
+    timeframe: string;
+    eventType: MonitorEventType;
+    uuid: string;
+  }, internalAlert: InternalAlert, triggerData: any) {
+    try {
+      // Emit notification event
+      // emit eventTriggered with event data like uuid of alert, sybol, timeframe, eventType, countremainig, triggerData which alertType can update. we can add userId as well in alert
+      await this.notificationService.emitAlertTriggered(alert, triggerData);
+
+      this.logger.log(`Alert triggered: ${alert.symbol} - ${alert.eventType}`);
+
+      // Handle count-based monitoring
+      if (!internalAlert.isEternal) {
+        internalAlert.remainingCount--;
+        
+        if (internalAlert.remainingCount <= 0) {
+          // Alert has reached its trigger limit, stop monitoring
+          this.logger.log(`Alert ${alert.uuid} has reached its trigger limit, stopping monitoring`);
+          await this.removeAlertFromMonitoring(alert.uuid);
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error triggering alert ${alert.uuid}:`,
+        error,
+      );
     }
-
-    // Clear monitoring interval
-    const interval = this.monitoringIntervals.get(alertId);
-    if (interval) {
-      clearInterval(interval);
-      this.monitoringIntervals.delete(alertId);
-    }
-
-    this.activeAlerts.delete(alertId);
-    this.logger.log(`Stopped monitoring alert ${alertId}`);
   }
 
-  private async startPriceMonitoring(alert: any) {
-    const alertId = alert._id || alert.id;
+  private getMonitoringInterval(timeframe: string): number {
+    const intervals: Record<string, number> = {
+      '1m': 30 * 1000, // 30 seconds
+      '5m': 60 * 1000, // 1 minute
+      '15m': 2 * 60 * 1000, // 2 minutes
+      '30m': 5 * 60 * 1000, // 5 minutes
+      '1h': 10 * 60 * 1000, // 10 minutes
+      '4h': 30 * 60 * 1000, // 30 minutes
+      '1d': 2 * 60 * 60 * 1000, // 2 hours
+    };
 
-    // Set up price monitoring interval
-    const interval = setInterval(async () => {
-      try {
-        const currentPrice = await this.priceMonitoringService.getCurrentPrice(
-          alert.symbol,
-        );
-        const targetPrice = alert.conditions?.targetPrice;
-
-        if (
-          targetPrice &&
-          this.checkPriceCondition(
-            currentPrice,
-            targetPrice,
-            alert.conditions?.condition,
-          )
-        ) {
-          await this.triggerAlert(alert, { currentPrice, targetPrice });
-        }
-      } catch (error) {
-        this.logger.error(
-          `Error in price monitoring for ${alert.symbol}:`,
-          error,
-        );
-      }
-    }, this.getMonitoringInterval(alert.timeframe));
-
-    this.monitoringIntervals.set(alertId, interval);
-  }
-
-  private async startBollingerBandsMonitoring(alert: any) {
-    const alertId = alert._id || alert.id;
-
-    const interval = setInterval(async () => {
-      try {
-        const bbData = await this.technicalAnalysisService.getBollingerBands(
-          alert.symbol,
-          alert.timeframe,
-        );
-        const currentPrice = await this.priceMonitoringService.getCurrentPrice(
-          alert.symbol,
-        );
-
-        if (
-          this.checkBollingerBandsCondition(
-            currentPrice,
-            bbData,
-            alert.conditions,
-          )
-        ) {
-          await this.triggerAlert(alert, { currentPrice, bbData });
-        }
-      } catch (error) {
-        this.logger.error(
-          `Error in Bollinger Bands monitoring for ${alert.symbol}:`,
-          error,
-        );
-      }
-    }, this.getMonitoringInterval(alert.timeframe));
-
-    this.monitoringIntervals.set(alertId, interval);
-  }
-
-  private async startEMACrossoverMonitoring(alert: any) {
-    const alertId = alert._id || alert.id;
-
-    const interval = setInterval(async () => {
-      try {
-        const emaData = await this.technicalAnalysisService.getEMACrossover(
-          alert.symbol,
-          alert.timeframe,
-        );
-
-        if (this.checkEMACrossoverCondition(emaData, alert.conditions)) {
-          await this.triggerAlert(alert, { emaData });
-        }
-      } catch (error) {
-        this.logger.error(
-          `Error in EMA crossover monitoring for ${alert.symbol}:`,
-          error,
-        );
-      }
-    }, this.getMonitoringInterval(alert.timeframe));
-
-    this.monitoringIntervals.set(alertId, interval);
-  }
-
-  private async startRSIMonitoring(alert: any) {
-    const alertId = alert._id || alert.id;
-
-    const interval = setInterval(async () => {
-      try {
-        const rsiData = await this.technicalAnalysisService.getRSI(
-          alert.symbol,
-          alert.timeframe,
-        );
-
-        if (this.checkRSICondition(rsiData, alert.conditions)) {
-          await this.triggerAlert(alert, { rsiData });
-        }
-      } catch (error) {
-        this.logger.error(
-          `Error in RSI monitoring for ${alert.symbol}:`,
-          error,
-        );
-      }
-    }, this.getMonitoringInterval(alert.timeframe));
-
-    this.monitoringIntervals.set(alertId, interval);
-  }
-
-  private async startMACDMonitoring(alert: any) {
-    const alertId = alert._id || alert.id;
-
-    const interval = setInterval(async () => {
-      try {
-        const macdData = await this.technicalAnalysisService.getMACD(
-          alert.symbol,
-          alert.timeframe,
-        );
-
-        if (this.checkMACDCondition(macdData, alert.conditions)) {
-          await this.triggerAlert(alert, { macdData });
-        }
-      } catch (error) {
-        this.logger.error(
-          `Error in MACD monitoring for ${alert.symbol}:`,
-          error,
-        );
-      }
-    }, this.getMonitoringInterval(alert.timeframe));
-
-    this.monitoringIntervals.set(alertId, interval);
-  }
-
-  private async startMonitoringOrder(order: any) {
-    // Implement order monitoring logic
-    this.logger.log(`Started monitoring order ${order.id} for ${order.symbol}`);
-  }
-
-  private async updateOrderMonitoring(order: any) {
-    // Implement order monitoring update logic
-    this.logger.log(`Updated monitoring for order ${order.id}`);
-  }
-
-  private async stopOrderMonitoring(orderId: string) {
-    // Implement order monitoring stop logic
-    this.logger.log(`Stopped monitoring order ${orderId}`);
-  }
-
-  private async checkAlertConditions(alert: any) {
-    // This method can be used for additional periodic checks
-    // beyond the interval-based monitoring
+    return intervals[timeframe] || 60 * 1000; // Default to 1 minute
   }
 
   private checkPriceCondition(
@@ -355,116 +457,146 @@ export class MonitoringService implements OnModuleInit {
   private checkBollingerBandsCondition(
     currentPrice: number,
     bbData: any,
-    conditions: any,
+    alertType: MonitorEventType,
   ): boolean {
     const { upperBand, lowerBand } = bbData;
 
-    if (conditions?.breakout === 'upper') {
+    if (alertType === MonitorEventType.BOLLINGER_BANDS_HIGH) {
       return currentPrice > upperBand;
-    } else if (conditions?.breakout === 'lower') {
+    } else if (alertType === MonitorEventType.BOLLINGER_BANDS_LOW) {
       return currentPrice < lowerBand;
-    } else if (conditions?.bounce === 'upper') {
-      return (
-        currentPrice <= upperBand && currentPrice > (upperBand + lowerBand) / 2
-      );
-    } else if (conditions?.bounce === 'lower') {
-      return (
-        currentPrice >= lowerBand && currentPrice < (upperBand + lowerBand) / 2
-      );
     }
 
     return false;
   }
 
-  private checkEMACrossoverCondition(emaData: any, conditions: any): boolean {
+  private checkEMACrossoverCondition(emaData: any, alertType: MonitorEventType): boolean {
     const { fastEMA, slowEMA, previousFastEMA, previousSlowEMA } = emaData;
 
-    if (conditions?.crossover === 'bullish') {
+    if (alertType === MonitorEventType.EMA_HIGH) {
       return previousFastEMA <= previousSlowEMA && fastEMA > slowEMA;
-    } else if (conditions?.crossover === 'bearish') {
+    } else if (alertType === MonitorEventType.EMA_LOW) {
       return previousFastEMA >= previousSlowEMA && fastEMA < slowEMA;
     }
 
     return false;
   }
 
-  private checkRSICondition(rsiData: any, conditions: any): boolean {
+  private checkRSICondition(rsiData: any, rsiThreshold: number, alertType: MonitorEventType): boolean {
     const { rsi } = rsiData;
 
-    if (conditions?.oversold && rsi < conditions.oversold) {
+    if (alertType === MonitorEventType.RSI_LOW && rsi <= rsiThreshold) {
       return true;
-    } else if (conditions?.overbought && rsi > conditions.overbought) {
+    } else if (alertType === MonitorEventType.RSI_CROSSOVER_HIGH && rsi >= rsiThreshold) {
       return true;
     }
 
     return false;
   }
 
-  private checkMACDCondition(macdData: any, conditions: any): boolean {
+  private checkMACDCondition(macdData: any, alertType: MonitorEventType): boolean {
     const { macd, signal, histogram } = macdData;
 
-    if (conditions?.crossover === 'bullish') {
+    if (alertType === MonitorEventType.MACD_CROSSOVER_HIGH) {
       return macd > signal && histogram > 0;
-    } else if (conditions?.crossover === 'bearish') {
+    } else if (alertType === MonitorEventType.MACD_CROSSOVER_LOW) {
       return macd < signal && histogram < 0;
     }
 
     return false;
   }
 
-  private async triggerAlert(alert: any, triggerData: any) {
+  private async loadActiveAlerts() {
     try {
-      // Increment trigger count
-      await this.alertService.incrementTriggerCount(
-        alert._id || alert.id,
-        triggerData,
-      );
-
-      // Emit notification event
-      await this.notificationService.emitAlertTriggered(alert, triggerData);
-
-      this.logger.log(`Alert triggered: ${alert.symbol} - ${alert.type}`);
+      const activeAlerts = await this.alertService.findActiveAlerts();
+      for (const alert of activeAlerts) {
+        await this.addAlertToMonitoring(alert);
+      }
+      this.logger.log(`Loaded ${activeAlerts.length} active alerts`);
     } catch (error) {
-      this.logger.error(
-        `Error triggering alert ${alert._id || alert.id}:`,
-        error,
-      );
+      this.logger.error('Error loading active alerts:', error);
     }
-  }
-
-  private getMonitoringInterval(timeframe: string): number {
-    const intervals: Record<string, number> = {
-      '1m': 30 * 1000, // 30 seconds
-      '5m': 60 * 1000, // 1 minute
-      '15m': 2 * 60 * 1000, // 2 minutes
-      '30m': 5 * 60 * 1000, // 5 minutes
-      '1h': 10 * 60 * 1000, // 10 minutes
-      '4h': 30 * 60 * 1000, // 30 minutes
-      '1d': 2 * 60 * 60 * 1000, // 2 hours
-    };
-
-    return intervals[timeframe] || 60 * 1000; // Default to 1 minute
-  }
-
-  private hasSignificantChanges(previous: any, current: any): boolean {
-    // Check if conditions, timeframe, or symbol changed
-    return (
-      previous.conditions !== current.conditions ||
-      previous.timeframe !== current.timeframe ||
-      previous.symbol !== current.symbol
-    );
   }
 
   // Public methods for external use
   async getActiveAlerts(): Promise<any[]> {
-    return Array.from(this.activeAlerts.values());
+    const alerts: any[] = [];
+    
+    for (const [symbol, timeframeMap] of this.activeAlerts) {
+      for (const [timeframe, eventTypeMap] of timeframeMap) {
+        for (const [eventType, alertMap] of eventTypeMap) {
+          for (const [alertId, internalAlert] of alertMap) {
+            // Get the alert data from the service
+            try {
+              const alert = await this.alertService.findOne(alertId);
+              if (alert) {
+                alerts.push(alert);
+              }
+            } catch (error) {
+              this.logger.error(`Error getting alert ${alertId}:`, error);
+            }
+          }
+        }
+      }
+    }
+    
+    return alerts;
   }
 
   async getMonitoringStatus(): Promise<any> {
     return {
       activeAlerts: this.activeAlerts.size,
-      monitoringIntervals: this.monitoringIntervals.size,
+      alertGroups: this.alertGroups.size,
       status: 'active',
     };
+  }
+
+  async getAlertsBySymbolAndTimeframe(symbol: string, timeframe: string): Promise<any[]> {
+    const alerts: any[] = [];
+    
+    const timeframeMap = this.activeAlerts.get(symbol);
+    if (timeframeMap) {
+      const eventTypeMap = timeframeMap.get(timeframe);
+      if (eventTypeMap) {
+        for (const [eventType, alertMap] of eventTypeMap) {
+          for (const [alertId, internalAlert] of alertMap) {
+            try {
+              const alert = await this.alertService.findOne(alertId);
+              if (alert) {
+                alerts.push(alert);
+              }
+            } catch (error) {
+              this.logger.error(`Error getting alert ${alertId}:`, error);
+            }
+          }
+        }
+      }
+    }
+    
+    return alerts;
+  }
+
+  async getAlertsByMonitorType(monitorType: MonitorEventType): Promise<any[]> {
+    const alerts: any[] = [];
+    
+    for (const [symbol, timeframeMap] of this.activeAlerts) {
+      for (const [timeframe, eventTypeMap] of timeframeMap) {
+        const alertMap = eventTypeMap.get(monitorType);
+        if (alertMap) {
+          for (const [alertId, internalAlert] of alertMap) {
+            try {
+              const alert = await this.alertService.findOne(alertId);
+              if (alert) {
+                alerts.push(alert);
+              }
+            } catch (error) {
+              this.logger.error(`Error getting alert ${alertId}:`, error);
+            }
+          }
+        }
+      }
+    }
+    
+    return alerts;
   }
 }
