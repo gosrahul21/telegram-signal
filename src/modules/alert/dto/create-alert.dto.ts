@@ -1,5 +1,5 @@
 import { IsString, IsEnum, IsNumber, IsOptional, IsArray, IsObject, Min, Max, IsBoolean } from 'class-validator';
-import { AlertType, Timeframe } from '../alert.entity';
+import { MonitorEventType, Timeframe } from '../alert.entity';
 
 export class CreateAlertDto {
   @IsString()
@@ -8,8 +8,8 @@ export class CreateAlertDto {
   // @IsString()
   // userId: string;
 
-  @IsEnum(AlertType)
-  type: AlertType;
+  @IsEnum(MonitorEventType)
+  type: MonitorEventType;
 
   @IsNumber()
   @Min(1)

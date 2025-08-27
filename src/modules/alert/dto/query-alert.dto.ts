@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsEnum, IsBoolean, IsArray } from 'class-validator';
-import { AlertType, Timeframe } from '../alert.entity';
+import { MonitorEventType, Timeframe } from '../alert.entity';
 import { Transform } from 'class-transformer';
 
 export class QueryAlertDto {
@@ -12,8 +12,8 @@ export class QueryAlertDto {
   userId?: string;
 
   @IsOptional()
-  @IsEnum(AlertType)
-  type?: AlertType;
+  @IsEnum(MonitorEventType)
+  type?: MonitorEventType;
 
   @IsOptional()
   @IsEnum(Timeframe)

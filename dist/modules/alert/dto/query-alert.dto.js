@@ -28,7 +28,7 @@ __decorate([
 ], QueryAlertDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(alert_entity_1.AlertType),
+    (0, class_validator_1.IsEnum)(alert_entity_1.MonitorEventType),
     __metadata("design:type", String)
 ], QueryAlertDto.prototype, "type", void 0);
 __decorate([

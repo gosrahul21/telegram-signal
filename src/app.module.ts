@@ -8,6 +8,7 @@ import { NotificationModule } from './modules/notification';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { SocketModule } from './modules/socket/socket.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     NotificationModule,
     AuthModule,
     UserModule,
+    SocketModule,
   ],
   controllers: [],
   providers: [],

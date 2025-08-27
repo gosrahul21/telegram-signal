@@ -21,7 +21,7 @@ let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
         this.logger = new common_1.Logger(AlertListenerService_1.name);
     }
     handleAlertUpdated(event) {
-        this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.type}`);
+        this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.eventType}`);
         if (event.previousData) {
             this.checkForCriticalChanges(event.previousData, event.alert);
         }
@@ -35,7 +35,7 @@ let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
         this.logToExternalService('alert_deleted', event);
     }
     handleAlertTriggered(event) {
-        this.logger.log(`Alert triggered: ${event.alert.symbol} - ${event.alert.type}`);
+        this.logger.log(`Alert triggered: ${event.alert.symbol} - ${event.alert.eventType}`);
         this.sendAlertNotification(event.alert, event.triggerData);
         this.executeTradingLogic(event.alert, event.triggerData);
         this.updateAlertAnalytics(event.alert, event.triggerData);

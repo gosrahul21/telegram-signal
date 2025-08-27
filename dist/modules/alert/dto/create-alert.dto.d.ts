@@ -1,7 +1,7 @@
-import { AlertType, Timeframe } from '../alert.entity';
+import { MonitorEventType, Timeframe } from '../alert.entity';
 export declare class CreateAlertDto {
     symbol: string;
-    type: AlertType;
+    type: MonitorEventType;
     count: number;
     eternalCount?: boolean;
     timeframe: Timeframe;

@@ -20,7 +20,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateAlertDto.prototype, "symbol", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(alert_entity_1.AlertType),
+    (0, class_validator_1.IsEnum)(alert_entity_1.MonitorEventType),
     __metadata("design:type", String)
 ], CreateAlertDto.prototype, "type", void 0);
 __decorate([

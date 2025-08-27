@@ -9,21 +9,22 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AlertSchema = exports.Alert = exports.Timeframe = exports.AlertType = void 0;
+exports.AlertSchema = exports.Alert = exports.Timeframe = exports.MonitorEventType = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const uuid_1 = require("uuid");
-var AlertType;
-(function (AlertType) {
-    AlertType["LIMIT"] = "limit";
-    AlertType["BOLLINGER_BANDS"] = "bollinger_bands";
-    AlertType["EMA"] = "ema_crossover";
-    AlertType["RSI"] = "rsi";
-    AlertType["MACD"] = "macd";
-    AlertType["STOCHASTIC"] = "stochastic";
-    AlertType["VOLUME"] = "volume";
-    AlertType["PRICE_ACTION"] = "price_action";
-})(AlertType || (exports.AlertType = AlertType = {}));
+var MonitorEventType;
+(function (MonitorEventType) {
+    MonitorEventType["LIMIT"] = "limit";
+    MonitorEventType["BOLLINGER_BANDS_LOW"] = "bollinger_bands_low";
+    MonitorEventType["BOLLINGER_BANDS_HIGH"] = "bollinger_bands_high";
+    MonitorEventType["EMA_LOW"] = "ema_crossover_low";
+    MonitorEventType["EMA_HIGH"] = "ema_crossover_high";
+    MonitorEventType["RSI_LOW"] = "rsi_low";
+    MonitorEventType["RSI_CROSSOVER_HIGH"] = "rsi_crossover_high";
+    MonitorEventType["MACD_CROSSOVER_LOW"] = "macd_crossover_low";
+    MonitorEventType["MACD_CROSSOVER_HIGH"] = "macd_crossover_high";
+})(MonitorEventType || (exports.MonitorEventType = MonitorEventType = {}));
 var Timeframe;
 (function (Timeframe) {
     Timeframe["ONE_MINUTE"] = "1m";
@@ -46,11 +47,11 @@ __decorate([
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Alert.prototype, "userId", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true, enum: AlertType }),
+    (0, mongoose_1.Prop)({ required: true, enum: MonitorEventType }),
     __metadata("design:type", String)
-], Alert.prototype, "type", void 0);
+], Alert.prototype, "eventType", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true, min: 1, max: 10 }),
+    (0, mongoose_1.Prop)({ required: true, min: 1 }),
     __metadata("design:type", Number)
 ], Alert.prototype, "count", void 0);
 __decorate([
@@ -65,6 +66,10 @@ __decorate([
     (0, mongoose_1.Prop)({ required: true, default: true }),
     __metadata("design:type", Boolean)
 ], Alert.prototype, "isActive", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, default: false }),
+    __metadata("design:type", Boolean)
+], Alert.prototype, "eternal", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: Object }),
     __metadata("design:type", Object)

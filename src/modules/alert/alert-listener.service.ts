@@ -19,7 +19,7 @@ export class AlertListenerService {
 
   @OnEvent(ALERT_EVENTS.UPDATED)
   handleAlertUpdated(event: AlertUpdatedEvent) {
-    this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.type}`);
+    this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.eventType}`);
     
     // Example: Check if critical fields changed
     if (event.previousData) {
@@ -49,7 +49,7 @@ export class AlertListenerService {
 
   @OnEvent(ALERT_EVENTS.TRIGGERED)
   handleAlertTriggered(event: AlertTriggeredEvent) {
-    this.logger.log(`Alert triggered: ${event.alert.symbol} - ${event.alert.type}`);
+    this.logger.log(`Alert triggered: ${event.alert.symbol} - ${event.alert.eventType}`);
     
     // Example: Send notification to user
     this.sendAlertNotification(event.alert, event.triggerData);

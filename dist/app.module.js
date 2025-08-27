@@ -17,6 +17,7 @@ const notification_1 = require("./modules/notification");
 const auth_module_1 = require("./modules/auth/auth.module");
 const user_module_1 = require("./modules/user/user.module");
 const mongoose_1 = require("@nestjs/mongoose");
+const socket_module_1 = require("./modules/socket/socket.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -35,6 +36,7 @@ exports.AppModule = AppModule = __decorate([
             notification_1.NotificationModule,
             auth_module_1.AuthModule,
             user_module_1.UserModule,
+            socket_module_1.SocketModule,
         ],
         controllers: [],
         providers: [],

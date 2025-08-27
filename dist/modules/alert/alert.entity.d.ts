@@ -1,14 +1,15 @@
 import { Document, Types } from 'mongoose';
 export type AlertDocument = Alert & Document;
-export declare enum AlertType {
+export declare enum MonitorEventType {
     LIMIT = "limit",
-    BOLLINGER_BANDS = "bollinger_bands",
-    EMA = "ema_crossover",
-    RSI = "rsi",
-    MACD = "macd",
-    STOCHASTIC = "stochastic",
-    VOLUME = "volume",
-    PRICE_ACTION = "price_action"
+    BOLLINGER_BANDS_LOW = "bollinger_bands_low",
+    BOLLINGER_BANDS_HIGH = "bollinger_bands_high",
+    EMA_LOW = "ema_crossover_low",
+    EMA_HIGH = "ema_crossover_high",
+    RSI_LOW = "rsi_low",
+    RSI_CROSSOVER_HIGH = "rsi_crossover_high",
+    MACD_CROSSOVER_LOW = "macd_crossover_low",
+    MACD_CROSSOVER_HIGH = "macd_crossover_high"
 }
 export declare enum Timeframe {
     ONE_MINUTE = "1m",
@@ -22,11 +23,12 @@ export declare enum Timeframe {
 export declare class Alert {
     symbol: string;
     userId: Types.ObjectId;
-    type: AlertType;
+    eventType: MonitorEventType;
     count: number;
     uuid: string;
     timeframe: Timeframe;
     isActive: boolean;
+    eternal: boolean;
     conditions: Record<string, any>;
     lastTriggered?: Date;
     triggerCount: number;

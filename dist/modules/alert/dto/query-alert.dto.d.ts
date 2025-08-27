@@ -1,8 +1,8 @@
-import { AlertType, Timeframe } from '../alert.entity';
+import { MonitorEventType, Timeframe } from '../alert.entity';
 export declare class QueryAlertDto {
     symbol?: string;
     userId?: string;
-    type?: AlertType;
+    type?: MonitorEventType;
     timeframe?: Timeframe;
     isActive?: boolean;
     tags?: string[];

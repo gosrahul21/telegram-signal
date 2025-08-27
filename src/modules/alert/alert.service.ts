@@ -39,7 +39,7 @@ export class AlertService {
       this.eventEmitter.emit(ALERT_EVENTS.CREATED, {
         alert: alertData,
         timestamp: new Date(),
-      } as AlertCreatedEvent);
+      });
 
       const alert = new this.alertModel(alertData);
       const savedAlert = await alert.save();
@@ -115,7 +115,7 @@ export class AlertService {
   async update(id: string, updateAlertDto: UpdateAlertDto): Promise<Alert> {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid alert ID');
-    } 
+    }
 
     // Get the previous alert data for comparison
     const previousAlert = await this.alertModel.findById(id);
@@ -236,6 +236,4 @@ export class AlertService {
       timestamp: new Date(),
     });
   }
-
-  
 }
