@@ -1,10 +1,10 @@
 // TESTED - Ok
 
 import axios from 'axios';
-import { CandleDataModal, CandleData } from '../models/candleData';
-import { UpstoxInterval } from '@/types/Duration';
+import { CandleDataModal, CandleData } from '../utils/helper/models/candleData';
+import { UpstoxInterval } from '@/utils/types/Duration';
 import 'dotenv/config';
-import config from '../config';
+import config from '../utils/config';
 
 export const aggregateToHourlyCandles = (data: CandleData[]): CandleData[] => {
   // Initialize an array to hold the aggregated hourly candles

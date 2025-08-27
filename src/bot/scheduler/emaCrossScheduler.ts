@@ -1,10 +1,10 @@
 import { Bot } from 'grammy';
 
-import { fetchCandleData } from '../../services/priceApi';
+import { fetchCandleData } from '../../services/binance-price-api.service';
 // import { keyPairsMapping } from '../../constants/symbols';
 // import userRepository from "../../repositories/userRepository";
-import { logger } from '../../logger';
-import { Duration } from '@/types/Duration';
+import { logger } from '../../utils/helper/logger';
+import { Duration } from '@/utils/types/Duration';
 import { keyPairsMapping } from '@/utils/constants';
 const ema = require('exponential-moving-average');
 

@@ -1,20 +1,20 @@
-import config from "../../config";
-import { calculateRSI } from "../../utils/helper/techincalIndicators";
-import { RSISignal } from "./renderRSISignal";
-import rsiSignal from "./rsiSIgnal";
+import config from '../../utils/config';
+import { calculateRSI } from '../../utils/helper/techincalIndicators';
+import { RSISignal } from './renderRSISignal';
+import rsiSignal from './rsiSIgnal';
 
 /**
  * Check RSI overbought conditions
  */
-export const generateRSISignal = async (
+export const generateRSISignal = (
   keyName: string,
   candles: any,
-  neutral: boolean = false
-): Promise<RSISignal[]> => {
+  neutral: boolean = false,
+): RSISignal[] => {
   // const candles: any = await fetchCandleData(keyName, duration);
   const rsiValues = calculateRSI(
     candles.map((candle: any) => candle.close),
-    14
+    14,
   );
   const currentRSI = rsiValues[rsiValues.length - 1];
 
@@ -24,7 +24,7 @@ export const generateRSISignal = async (
     keyName,
     candles[mostRecentIndex].close,
     candles[mostRecentIndex].closeTime,
-    neutral
+    neutral,
   );
   return signals;
 };

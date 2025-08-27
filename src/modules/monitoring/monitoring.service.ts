@@ -291,39 +291,6 @@ export class MonitoringService implements OnModuleInit {
     }
   }
 
-  // private startPriceMonitoring(symbol: string, timeframe: string): NodeJS.Timeout {
-  //   // Set up price monitoring interval for all alerts of this symbol/timeframe
-  //   const interval = setInterval(async () => {
-  //     try {
-  //       const alerts = this.activeAlerts.get(symbol)?.get(timeframe)?.get(MonitorEventType.LIMIT);
-  //       if (!alerts) return;
-
-  //       const currentPrice = await this.priceMonitoringService.getCurrentPrice(symbol);
-
-  //       // Check all alerts of this type
-  //       for (const [alertId, internalAlert] of alerts) {
-  //         try {
-  //           // const alert = await this.alertService.findOne(alertId);
-  //           if (alert && alert.conditions?.targetPrice) {
-  //             if (this.checkPriceCondition(
-  //               currentPrice,
-  //               alert.conditions.targetPrice,
-  //               alert.conditions?.condition,
-  //             )) {
-  //               await this.triggerAlert(alert, internalAlert, { currentPrice, targetPrice: alert.conditions.targetPrice });
-  //             }
-  //           }
-  //         } catch (error) {
-  //           this.logger.error(`Error checking price alert ${alertId}:`, error);
-  //         }
-  //       }
-  //     } catch (error) {
-  //       this.logger.error(`Error in price monitoring for ${symbol}:`, error);
-  //     }
-  //   }, this.getMonitoringInterval(timeframe));
-
-  //   return interval;
-  // }
 
   private startBollingerBandsMonitoring(
     symbol: string,

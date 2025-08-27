@@ -1,54 +1,57 @@
-import { instrumentMapping } from '../constants/symbols';
-import { UpstoxInterval } from '@/types/Duration';
+import { UpstoxInterval } from '@/utils/types/Duration';
 import formatDate from '../utils/helper/formatDate';
 import {
   aggregateToDayCandle,
   fetchCandleHistory,
   getIntradayCandles,
 } from './upstoxApi';
-import { CandleData } from '../models/candleData';
+import { CandleData } from '../utils/helper/models/candleData';
+import { instrumentMapping } from '@/utils/constants';
 
-// to be tested
-async function getStockHistoricalCandles(
-  symbol: string,
-  interval: UpstoxInterval,
-): Promise<CandleData[]> {
-  // Iterate through each instrument in the instrument mapping
-  // Calculate the toDate as current date
-  const toDate = new Date();
+export class UpstoxPriceApiService {
+  constructor() {}
 
-  // Format the dates to "yyyy:mm:dd" format
-  const formattedToDate = formatDate(toDate); //current date
-  const intrumentKey =
-    instrumentMapping[symbol as keyof typeof instrumentMapping];
-  let historicalCandles = await fetchCandleHistory(
-    intrumentKey,
-    interval,
-    formattedToDate,
-  );
+  async getStockHistoricalCandles(
+    symbol: string,
+    interval: UpstoxInterval,
+  ): Promise<CandleData[]> {
+    // Iterate through each instrument in the instrument mapping
+    // Calculate the toDate as current date
+    const toDate = new Date();
 
-  if (interval === UpstoxInterval.OneHour) {
-    const intradayCandles = await getIntradayCandles(intrumentKey, interval);
-    // const fiveMinutesCandles = await getIntradayCandles(
-    //   symbol,
-    //   UpstoxInterval.FiveMinutes
-    // );
-    historicalCandles = [
-      // ...(fiveMinutesCandles.length > 0 ? [fiveMinutesCandles[0]] : []), // first 5 minutes candle
-      ...intradayCandles,
-      ...historicalCandles,
-    ];
-  } else if (interval === UpstoxInterval.OneDay) {
-    const intradayCandles = await getIntradayCandles(
+    // Format the dates to "yyyy:mm:dd" format
+    const formattedToDate = formatDate(toDate); //current date
+    const intrumentKey =
+      instrumentMapping[symbol as keyof typeof instrumentMapping];
+    let historicalCandles = await fetchCandleHistory(
       intrumentKey,
-      UpstoxInterval.OneHour,
+      interval,
+      formattedToDate,
     );
-    historicalCandles = [
-      aggregateToDayCandle(intradayCandles),
-      ...historicalCandles,
-    ];
+
+    if (interval === UpstoxInterval.OneHour) {
+      const intradayCandles = await getIntradayCandles(intrumentKey, interval);
+      // const fiveMinutesCandles = await getIntradayCandles(
+      //   symbol,
+      //   UpstoxInterval.FiveMinutes
+      // );
+      historicalCandles = [
+        // ...(fiveMinutesCandles.length > 0 ? [fiveMinutesCandles[0]] : []), // first 5 minutes candle
+        ...intradayCandles,
+        ...historicalCandles,
+      ];
+    } else if (interval === UpstoxInterval.OneDay) {
+      const intradayCandles = await getIntradayCandles(
+        intrumentKey,
+        UpstoxInterval.OneHour,
+      );
+      historicalCandles = [
+        aggregateToDayCandle(intradayCandles),
+        ...historicalCandles,
+      ];
+    }
+    return historicalCandles.reverse();
   }
-  return historicalCandles.reverse();
 }
 
-export default getStockHistoricalCandles;
+export const upstoxPriceApiService = new UpstoxPriceApiService();

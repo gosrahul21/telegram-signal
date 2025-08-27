@@ -1,3 +1,4 @@
+import { BinancePriceApiService } from '@/services/binance-price-api.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -11,6 +12,7 @@ export class PriceMonitoringService {
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly binancePriceApiService: BinancePriceApiService,
   ) {}
 
   async getCurrentPrice(symbol: string): Promise<number> {
@@ -56,7 +58,7 @@ export class PriceMonitoringService {
       }
 
       // Fetch from API
-      const prices = await this.fetchHistoricalPricesFromAPI(symbol, timeframe, limit);
+      const prices = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
       
       // Update cache
       this.historicalCache.set(cacheKey, {
@@ -258,8 +260,9 @@ export class PriceMonitoringService {
     // Example using a mock API
     try {
       // You can integrate with CoinGecko, Binance, Coinbase, etc.
-      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbol.toLowerCase()}&vs_currencies=usd`);
-      const data = await response.json();
+      const response = await this.binancePriceApiService.fetchBinanceTickerPrice(symbol);
+      
+      const data = response;
       
       if (data[symbol.toLowerCase()]?.usd) {
         return data[symbol.toLowerCase()].usd;
@@ -275,37 +278,14 @@ export class PriceMonitoringService {
     }
   }
 
-  private async fetchHistoricalPricesFromAPI(symbol: string, timeframe: string, limit: number): Promise<number[]> {
-    // Implement your historical price API integration here
-    // This is a placeholder - replace with actual API call
-    
-    try {
-      // You can integrate with CoinGecko, Binance, Coinbase, etc.
-      const response = await fetch(`https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart?vs_currency=usd&days=${this.timeframeToDays(timeframe)}`);
-      const data = await response.json();
-      
-      if (data.prices && Array.isArray(data.prices)) {
-        return data.prices.slice(-limit).map((price: [number, number]) => price[1]);
-      }
-      
-      throw new Error('Invalid response from historical price API');
-    } catch (error) {
-      this.logger.error(`API error for historical prices ${symbol}:`, error);
-      
-      // Return mock data for development/testing
-      // Remove this in production
-      return this.getMockHistoricalPrices(limit);
-    }
-  }
-
   private async fetchHistoricalVolumesFromAPI(symbol: string, timeframe: string, limit: number): Promise<number[]> {
     // Implement your historical volume API integration here
     // This is a placeholder - replace with actual API call
     
     try {
       // You can integrate with CoinGecko, Binance, Coinbase, etc.
-      const response = await fetch(`https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart?vs_currency=usd&days=${this.timeframeToDays(timeframe)}`);
-      const data = await response.json();
+      const response = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
+      const data = response;
       
       if (data.total_volumes && Array.isArray(data.total_volumes)) {
         return data.total_volumes.slice(-limit).map((volume: [number, number]) => volume[1]);

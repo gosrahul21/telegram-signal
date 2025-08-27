@@ -1,10 +1,13 @@
 import { Bot } from 'grammy';
-import { fetchCandleData, fetchTickerPrice } from '../../services/priceApi';
-import { Duration, UpstoxInterval } from '@/types/Duration';
+import {
+  fetchCandleData,
+  fetchTickerPrice,
+} from '../../services/binance-price-api.service';
+import { Duration, UpstoxInterval } from '@/utils/types/Duration';
 import { calculateRSI } from '../../utils/helper/techincalIndicators';
-import config from '../../config/index';
+import config from '../../utils/config/index';
 import * as schedule from 'node-schedule';
-import { logger } from '../../logger';
+import { logger } from '../../utils/helper/logger';
 import { delay } from '../utils/delay';
 import generateRSISignal from '../utils/generateRSIOverBoughtSignal';
 import getStockHistoricalCandles from '../../services/getStockHistoricalCandles';
