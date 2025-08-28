@@ -1,5 +1,5 @@
 import { Bot } from 'grammy';
-import { Duration } from '@/types/Duration';
+import { Duration } from '@/utils/types/Duration';
 interface EMASignal {
     type: string;
     time: number;

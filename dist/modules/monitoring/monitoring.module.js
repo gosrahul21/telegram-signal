@@ -18,6 +18,8 @@ const rsi_service_1 = require("./rsi.service");
 const ema_service_1 = require("./ema.service");
 const notification_service_1 = require("./notification.service");
 const alert_module_1 = require("../alert/alert.module");
+const alert_listener_service_1 = require("./alert-listener.service");
+const binance_price_api_service_1 = require("../../services/binance-price-api.service");
 let MonitoringModule = class MonitoringModule {
 };
 exports.MonitoringModule = MonitoringModule;
@@ -36,6 +38,8 @@ exports.MonitoringModule = MonitoringModule = __decorate([
             rsi_service_1.RSIService,
             ema_service_1.EMAService,
             notification_service_1.NotificationService,
+            alert_listener_service_1.AlertListenerService,
+            binance_price_api_service_1.BinancePriceApiService
         ],
         exports: [
             monitoring_service_1.MonitoringService,

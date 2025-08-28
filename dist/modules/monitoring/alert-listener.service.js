@@ -21,9 +21,6 @@ let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
     }
     async handleAlertCreated(event) {
         this.logger.log(`New alert created: ${event.alert.symbol} - ${event.alert.eventType} - ${event.alert.timeframe}`);
-        if (event.alert.isActive) {
-            await this.monitoringService.addAlertToMonitoring(event.alert);
-        }
     }
     async handleAlertUpdated(event) {
         this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.eventType} - ${event.alert.timeframe}`);

@@ -1,4 +1,7 @@
-export declare function calculateEMA(prices: number[], period: number): any;
-export declare function calculateRSI(prices: number[], period?: number): any;
-export declare function calculateMACD(prices: number[]): any;
-export declare const getIndicatorOnTimeFrame: (symbol: string, timeframe: string) => Promise<string>;
+export declare class TechnicalIndicatorsService {
+    constructor();
+    calculateEMA(prices: number[], period: number): any;
+    calculateRSI(prices: number[], period?: number): any;
+    calculateMACD(prices: number[]): any;
+}
+export declare const technicalIndicatorsService: TechnicalIndicatorsService;

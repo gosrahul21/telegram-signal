@@ -10,12 +10,13 @@ exports.SocketModule = void 0;
 const common_1 = require("@nestjs/common");
 const socket_service_1 = require("./socket.service");
 const socket_gateway_1 = require("./socket.gateway");
+const socket_auth_middleware_1 = require("./socket-auth.middleware");
 let SocketModule = class SocketModule {
 };
 exports.SocketModule = SocketModule;
 exports.SocketModule = SocketModule = __decorate([
     (0, common_1.Module)({
-        providers: [socket_service_1.SocketService, socket_gateway_1.SocketGateway],
+        providers: [socket_service_1.SocketService, socket_gateway_1.SocketGateway, socket_auth_middleware_1.SocketAuthMiddleware],
         exports: [socket_service_1.SocketService],
     })
 ], SocketModule);

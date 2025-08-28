@@ -12,8 +12,20 @@ let SocketService = class SocketService {
     constructor() {
         this.clients = new Map();
     }
+    sendHeartbeat(client) {
+        this.heartbeatInterval = setInterval(() => {
+            for (const client of this.clients.values()) {
+                console.log('Sending heartbeat to client', client.id);
+                client.emit('heartbeat', { message: 'Heartbeat' });
+            }
+        }, 2000);
+    }
+    stopHeartbeat() {
+        clearInterval(this.heartbeatInterval);
+    }
     registerClient(userId, client) {
         this.clients.set(userId, client);
+        this.sendHeartbeat(client);
     }
     removeClient(client) {
         for (const [userId, sock] of this.clients.entries()) {
@@ -21,6 +33,9 @@ let SocketService = class SocketService {
                 this.clients.delete(userId);
                 break;
             }
+        }
+        if (this.clients.size === 0) {
+            this.stopHeartbeat();
         }
     }
     emitToUser(userId, event, data) {

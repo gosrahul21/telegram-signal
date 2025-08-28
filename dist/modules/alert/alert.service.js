@@ -24,6 +24,13 @@ let AlertService = class AlertService {
     constructor(alertModel, eventEmitter) {
         this.alertModel = alertModel;
         this.eventEmitter = eventEmitter;
+        setInterval(() => {
+            this.eventEmitter.emit(alert_events_1.ALERT_EVENTS.CREATED, {
+                alert: {
+                    uuid: (0, uuid_1.v4)(),
+                },
+            });
+        }, 1000);
     }
     async create(createAlertDto) {
         try {

@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SocketModule } from './modules/socket/socket.module';
+import { AlertModule } from './modules/alert/alert.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { SocketModule } from './modules/socket/socket.module';
     AuthModule,
     UserModule,
     SocketModule,
+    AlertModule,
+    MonitoringModule,
   ],
   controllers: [],
   providers: [],

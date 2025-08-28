@@ -1,12 +1,14 @@
+import { BinancePriceApiService } from '@/services/binance-price-api.service';
 import { ConfigService } from '@nestjs/config';
 export declare class PriceMonitoringService {
     private readonly configService;
+    private readonly binancePriceApiService;
     private readonly logger;
     private priceCache;
     private historicalCache;
     private readonly CACHE_DURATION;
     private readonly HISTORICAL_CACHE_DURATION;
-    constructor(configService: ConfigService);
+    constructor(configService: ConfigService, binancePriceApiService: BinancePriceApiService);
     getCurrentPrice(symbol: string): Promise<number>;
     getHistoricalPrices(symbol: string, timeframe: string, limit?: number): Promise<number[]>;
     getHistoricalVolumes(symbol: string, timeframe: string, limit?: number): Promise<number[]>;
@@ -36,7 +38,6 @@ export declare class PriceMonitoringService {
         totalCacheSize: number;
     };
     private fetchCurrentPriceFromAPI;
-    private fetchHistoricalPricesFromAPI;
     private fetchHistoricalVolumesFromAPI;
     private timeframeToDays;
     private getMockPrice;

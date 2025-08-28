@@ -1,4 +1,7 @@
-import { UpstoxInterval } from '@/types/Duration';
-import { CandleData } from '../models/candleData';
-declare function getStockHistoricalCandles(symbol: string, interval: UpstoxInterval): Promise<CandleData[]>;
-export default getStockHistoricalCandles;
+import { UpstoxInterval } from '@/utils/types/Duration';
+import { CandleData } from '../utils/helper/models/candleData';
+export declare class UpstoxPriceApiService {
+    constructor();
+    getStockHistoricalCandles(symbol: string, interval: UpstoxInterval): Promise<CandleData[]>;
+}
+export declare const upstoxPriceApiService: UpstoxPriceApiService;

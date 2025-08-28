@@ -1,5 +1,5 @@
 import { Bot } from 'grammy';
-import { Duration } from '@/types/Duration';
+import { Duration } from '@/utils/types/Duration';
 import { RSISignal } from '../utils/renderRSISignal';
 export interface CandleData {
     open: number;

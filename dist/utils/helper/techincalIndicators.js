@@ -1,43 +1,40 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getIndicatorOnTimeFrame = void 0;
-exports.calculateEMA = calculateEMA;
-exports.calculateRSI = calculateRSI;
-exports.calculateMACD = calculateMACD;
-const priceApi_1 = require("../../services/priceApi");
-const ti = require("technicalindicators");
-function calculateEMA(prices, period) {
-    return ti.EMA.calculate({ period, values: prices });
-}
-function calculateRSI(prices, period = 14) {
-    return ti.RSI.calculate({ period, values: prices });
-}
-function calculateMACD(prices) {
-    return ti.MACD.calculate({
-        values: prices,
-        fastPeriod: 12,
-        slowPeriod: 26,
-        signalPeriod: 9,
-        SimpleMAOscillator: false,
-        SimpleMASignal: false,
-    });
-}
-const getIndicatorOnTimeFrame = async (symbol, timeframe) => {
-    const candleData = await (0, priceApi_1.fetchCandleData)(symbol, timeframe);
-    const prices = candleData.map(({ close }) => close);
-    const macdResult = calculateMACD(prices).slice(-7);
-    const ema9Series = calculateEMA(prices, 9).slice(-7);
-    const ema20Series = calculateEMA(prices, 20).slice(-7);
-    const rsiSeries = calculateRSI(prices, 14).slice(-7);
-    let indicatorDetails = [
-        `Technical indicators for ${timeframe} ${symbol}`,
-        `Current Price: ${candleData[candleData.length - 1].close}`,
-        "MACD (12,26,9): " + JSON.stringify(macdResult),
-        "EMA (9-day): " + JSON.stringify(ema9Series),
-        "EMA (20-day): " + JSON.stringify(ema20Series),
-        "RSI (14-day): " + JSON.stringify(rsiSeries),
-    ].join("\n");
-    return indicatorDetails;
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-exports.getIndicatorOnTimeFrame = getIndicatorOnTimeFrame;
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.technicalIndicatorsService = exports.TechnicalIndicatorsService = void 0;
+const common_1 = require("@nestjs/common");
+const ti = require('technicalindicators');
+let TechnicalIndicatorsService = class TechnicalIndicatorsService {
+    constructor() { }
+    calculateEMA(prices, period) {
+        return ti.EMA.calculate({ period, values: prices });
+    }
+    calculateRSI(prices, period = 14) {
+        return ti.RSI.calculate({ period, values: prices });
+    }
+    calculateMACD(prices) {
+        return ti.MACD.calculate({
+            values: prices,
+            fastPeriod: 12,
+            slowPeriod: 26,
+            signalPeriod: 9,
+            SimpleMAOscillator: false,
+            SimpleMASignal: false,
+        });
+    }
+};
+exports.TechnicalIndicatorsService = TechnicalIndicatorsService;
+exports.TechnicalIndicatorsService = TechnicalIndicatorsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [])
+], TechnicalIndicatorsService);
+exports.technicalIndicatorsService = new TechnicalIndicatorsService();
 //# sourceMappingURL=techincalIndicators.js.map

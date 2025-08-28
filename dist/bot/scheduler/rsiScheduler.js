@@ -2,11 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rsiScheduler = exports.priceAwayFromAverage = void 0;
 exports.calculateEMA = calculateEMA;
-const priceApi_1 = require("../../services/priceApi");
-const Duration_1 = require("../../types/Duration");
-const index_1 = require("../../config/index");
+const binance_price_api_service_1 = require("../../services/binance-price-api.service");
+const Duration_1 = require("../../utils/types/Duration");
+const index_1 = require("../../utils/config/index");
 const schedule = require("node-schedule");
-const logger_1 = require("../../logger");
+const logger_1 = require("../../utils/helper/logger");
 const delay_1 = require("../utils/delay");
 const processRSISignal_1 = require("../../services/processRSISignal");
 const ema = require('exponential-moving-average');
@@ -23,7 +23,7 @@ function calculateEMA(candlePrices, duration) {
     return ema(arr, duration).reverse();
 }
 const priceAwayFromAverage = async (keyName, pairName, duration) => {
-    const prices = await (0, priceApi_1.fetchTickerPrice)(keyName);
+    const prices = await (0, binance_price_api_service_1.fetchTickerPrice)(keyName);
     const price = prices.find((price) => price.market === keyName);
     const signals = [];
     return signals;

@@ -33,10 +33,11 @@ export class AuthService {
       telegramId: user.telegramId,
       chatId: user.chatId,
     };
-    console.log({ user });
 
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+      }),
       user: {
         id: user._id,
         username: user.username,

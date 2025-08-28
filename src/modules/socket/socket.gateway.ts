@@ -26,8 +26,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly socketAuthMiddleware: SocketAuthMiddleware,
   ) {}
 
-  handleConnection(client: Socket) {
-    const userId = client.handshake.query.userId as string;
+  handleConnection(client: Socket & { user: any }) {
+    const userId = client.data.user.sub;
+    console.log('handleConnection', client.data.user);
     if (userId) {
       this.socketService.registerClient(userId, client);
       console.log(`✅ User ${userId} connected`);

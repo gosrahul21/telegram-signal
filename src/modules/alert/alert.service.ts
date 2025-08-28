@@ -25,7 +25,16 @@ export class AlertService {
   constructor(
     @InjectModel(Alert.name) private alertModel: Model<AlertDocument>,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+
+    setInterval(() => {
+      this.eventEmitter.emit(ALERT_EVENTS.CREATED, {
+        alert: {
+          uuid: uuidv4(),
+        },
+      });
+    }, 1000);
+  }
 
   async create(createAlertDto: CreateAlertDto): Promise<Alert> {
     try {

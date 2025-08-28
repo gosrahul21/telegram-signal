@@ -6,10 +6,10 @@ import { Types, Document } from 'mongoose';
 export class User {
   _id?: Types.ObjectId;
 
-  @Prop({ required: false, unique: true, index: true })
+  @Prop({ required: false, unique: true, sparse: true, default: null })
   telegramId: number;
 
-  @Prop({ required: false, unique: true, index: true })
+  @Prop({ required: false, unique: true, sparse: true, default: null })
   chatId: number;
 
   @Prop({ required: true, unique: true, index: true })

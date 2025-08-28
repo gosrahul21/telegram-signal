@@ -15,11 +15,11 @@ let User = class User {
 };
 exports.User = User;
 __decorate([
-    (0, mongoose_1.Prop)({ required: false, unique: true, index: true }),
+    (0, mongoose_1.Prop)({ required: false, unique: true, sparse: true, default: null }),
     __metadata("design:type", Number)
 ], User.prototype, "telegramId", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: false, unique: true, index: true }),
+    (0, mongoose_1.Prop)({ required: false, unique: true, sparse: true, default: null }),
     __metadata("design:type", Number)
 ], User.prototype, "chatId", void 0);
 __decorate([

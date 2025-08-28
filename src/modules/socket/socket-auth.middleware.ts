@@ -14,6 +14,7 @@ export class SocketAuthMiddleware {
       }
 
       const payload = jwt.verify(token, process.env.JWT_SECRET);
+      console.log(payload, process.env.JWT_SECRET);
       socket.data = { user: payload }; // Save user info to socket
       next();
     } catch (err) {

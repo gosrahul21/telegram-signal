@@ -5,9 +5,24 @@ import { Socket } from 'socket.io';
 @Injectable()
 export class SocketService {
   private clients: Map<string, Socket> = new Map();
+  private heartbeatInterval: NodeJS.Timeout;
+
+  sendHeartbeat(client: Socket) {
+    this.heartbeatInterval = setInterval(() => {
+      for (const client of this.clients.values()) {
+        console.log('Sending heartbeat to client', client.id);
+        client.emit('heartbeat', { message: 'Heartbeat' });
+      }
+    }, 2000);
+  }
+
+  stopHeartbeat() {
+    clearInterval(this.heartbeatInterval);
+  }
 
   registerClient(userId: string, client: Socket) {
     this.clients.set(userId, client);
+    this.sendHeartbeat(client);
   }
 
   removeClient(client: Socket) {
@@ -16,6 +31,9 @@ export class SocketService {
         this.clients.delete(userId);
         break;
       }
+    }
+    if (this.clients.size === 0) {
+      this.stopHeartbeat();
     }
   }
 

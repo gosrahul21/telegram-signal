@@ -11,11 +11,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var PriceMonitoringService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PriceMonitoringService = void 0;
+const binance_price_api_service_1 = require("../../services/binance-price-api.service");
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 let PriceMonitoringService = PriceMonitoringService_1 = class PriceMonitoringService {
-    constructor(configService) {
+    constructor(configService, binancePriceApiService) {
         this.configService = configService;
+        this.binancePriceApiService = binancePriceApiService;
         this.logger = new common_1.Logger(PriceMonitoringService_1.name);
         this.priceCache = new Map();
         this.historicalCache = new Map();
@@ -52,7 +54,7 @@ let PriceMonitoringService = PriceMonitoringService_1 = class PriceMonitoringSer
             if (cached && Date.now() - cached.timestamp < this.HISTORICAL_CACHE_DURATION) {
                 return cached.data;
             }
-            const prices = await this.fetchHistoricalPricesFromAPI(symbol, timeframe, limit);
+            const prices = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
             this.historicalCache.set(cacheKey, {
                 data: prices,
                 timestamp: Date.now(),
@@ -196,8 +198,8 @@ let PriceMonitoringService = PriceMonitoringService_1 = class PriceMonitoringSer
     }
     async fetchCurrentPriceFromAPI(symbol) {
         try {
-            const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbol.toLowerCase()}&vs_currencies=usd`);
-            const data = await response.json();
+            const response = await this.binancePriceApiService.fetchBinanceTickerPrice(symbol);
+            const data = response;
             if (data[symbol.toLowerCase()]?.usd) {
                 return data[symbol.toLowerCase()].usd;
             }
@@ -208,24 +210,10 @@ let PriceMonitoringService = PriceMonitoringService_1 = class PriceMonitoringSer
             return this.getMockPrice(symbol);
         }
     }
-    async fetchHistoricalPricesFromAPI(symbol, timeframe, limit) {
-        try {
-            const response = await fetch(`https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart?vs_currency=usd&days=${this.timeframeToDays(timeframe)}`);
-            const data = await response.json();
-            if (data.prices && Array.isArray(data.prices)) {
-                return data.prices.slice(-limit).map((price) => price[1]);
-            }
-            throw new Error('Invalid response from historical price API');
-        }
-        catch (error) {
-            this.logger.error(`API error for historical prices ${symbol}:`, error);
-            return this.getMockHistoricalPrices(limit);
-        }
-    }
     async fetchHistoricalVolumesFromAPI(symbol, timeframe, limit) {
         try {
-            const response = await fetch(`https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart?vs_currency=usd&days=${this.timeframeToDays(timeframe)}`);
-            const data = await response.json();
+            const response = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
+            const data = response;
             if (data.total_volumes && Array.isArray(data.total_volumes)) {
                 return data.total_volumes.slice(-limit).map((volume) => volume[1]);
             }
@@ -281,6 +269,7 @@ let PriceMonitoringService = PriceMonitoringService_1 = class PriceMonitoringSer
 exports.PriceMonitoringService = PriceMonitoringService;
 exports.PriceMonitoringService = PriceMonitoringService = PriceMonitoringService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [config_1.ConfigService])
+    __metadata("design:paramtypes", [config_1.ConfigService,
+        binance_price_api_service_1.BinancePriceApiService])
 ], PriceMonitoringService);
 //# sourceMappingURL=price-monitoring.service.js.map

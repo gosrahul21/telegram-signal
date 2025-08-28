@@ -21,9 +21,9 @@ export class AlertListenerService {
       `New alert created: ${event.alert.symbol} - ${event.alert.eventType} - ${event.alert.timeframe}`,
     );
 
-    if (event.alert.isActive) {
-      await this.monitoringService.addAlertToMonitoring(event.alert);
-    }
+    // if (event.alert.isActive) {
+    //   await this.monitoringService.addAlertToMonitoring(event.alert);
+    // }
   }
 
   @OnEvent('alert.updated')

@@ -17,12 +17,15 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 const socket_service_1 = require("./socket.service");
+const socket_auth_middleware_1 = require("./socket-auth.middleware");
 let SocketGateway = class SocketGateway {
-    constructor(socketService) {
+    constructor(socketService, socketAuthMiddleware) {
         this.socketService = socketService;
+        this.socketAuthMiddleware = socketAuthMiddleware;
     }
     handleConnection(client) {
-        const userId = client.handshake.query.userId;
+        const userId = client.data.user.sub;
+        console.log('handleConnection', client.data.user);
         if (userId) {
             this.socketService.registerClient(userId, client);
             console.log(`✅ User ${userId} connected`);
@@ -34,6 +37,9 @@ let SocketGateway = class SocketGateway {
     }
     handlePing(msg, client) {
         return { event: 'pong', data: `Hello, got your ping: ${msg}` };
+    }
+    afterInit(server) {
+        server.use(this.socketAuthMiddleware.use.bind(this.socketAuthMiddleware));
     }
 };
 exports.SocketGateway = SocketGateway;
@@ -54,6 +60,7 @@ exports.SocketGateway = SocketGateway = __decorate([
         cors: { origin: '*' },
     }),
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [socket_service_1.SocketService])
+    __metadata("design:paramtypes", [socket_service_1.SocketService,
+        socket_auth_middleware_1.SocketAuthMiddleware])
 ], SocketGateway);
 //# sourceMappingURL=socket.gateway.js.map

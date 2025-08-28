@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.emaCrossScheduler = exports.renderSignal = exports.getSmallSignal = exports.generateSignal = void 0;
 exports.calculateEMA = calculateEMA;
 exports.generateCrossSignals = generateCrossSignals;
-const priceApi_1 = require("../../services/priceApi");
-const logger_1 = require("../../logger");
+const binance_price_api_service_1 = require("../../services/binance-price-api.service");
+const logger_1 = require("../../utils/helper/logger");
 const constants_1 = require("../../utils/constants");
 const ema = require('exponential-moving-average');
 const fallbackKeyPairs = ['BTCUSDT', 'SOLUSDT', 'SUIUSDT'];
@@ -79,7 +79,7 @@ function generateCrossSignals(prices, ema9, ema21, ema20, ema50, getTrend = fals
     return signals;
 }
 const generateSignal = async (keyname, duration) => {
-    const candles = await (0, priceApi_1.fetchCandleData)(keyname, duration);
+    const candles = await (0, binance_price_api_service_1.fetchCandleData)(keyname, duration);
     const ema9 = calculateEMA(candles, 9);
     const ema21 = calculateEMA(candles, 21);
     const ema20 = calculateEMA(candles, 20);
@@ -89,7 +89,7 @@ const generateSignal = async (keyname, duration) => {
 exports.generateSignal = generateSignal;
 const getSmallSignal = async (keyname, duration, emaShort, emaLong) => {
     const pairname = constants_1.keyPairsMapping[keyname];
-    const candles = await (0, priceApi_1.fetchCandleData)(pairname, duration);
+    const candles = await (0, binance_price_api_service_1.fetchCandleData)(pairname, duration);
     const emasShort = calculateEMA(candles, emaShort);
     const emasLong = calculateEMA(candles, emaLong);
     const mostRecentIndex = 0;

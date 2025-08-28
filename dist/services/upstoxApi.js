@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.aggregateToDayCandle = exports.getIntradayCandles = exports.fetchCandleHistory = exports.aggregateToHourlyCandles = void 0;
 const axios_1 = require("axios");
-const candleData_1 = require("../models/candleData");
+const candleData_1 = require("../utils/helper/models/candleData");
 require("dotenv/config");
-const config_1 = require("../config");
+const config_1 = require("../utils/config");
 const aggregateToHourlyCandles = (data) => {
     const hourlyCandles = [];
     for (let i = 0; i < data.length; i += 2) {

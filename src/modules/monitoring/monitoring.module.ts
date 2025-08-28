@@ -9,6 +9,8 @@ import { RSIService } from './rsi.service';
 import { EMAService } from './ema.service';
 import { NotificationService } from './notification.service';
 import { AlertModule } from '../alert/alert.module';
+import { AlertListenerService } from './alert-listener.service';
+import { BinancePriceApiService } from '@/services/binance-price-api.service';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { AlertModule } from '../alert/alert.module';
     RSIService,
     EMAService,
     NotificationService,
+    AlertListenerService,
+    BinancePriceApiService
   ],
   exports: [
     MonitoringService,
