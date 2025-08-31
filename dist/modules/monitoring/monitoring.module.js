@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MonitoringModule = void 0;
 const common_1 = require("@nestjs/common");
-const event_emitter_1 = require("@nestjs/event-emitter");
 const monitoring_service_1 = require("./monitoring.service");
 const technical_analysis_service_1 = require("./technical-analysis.service");
 const price_monitoring_service_1 = require("./price-monitoring.service");
@@ -26,7 +25,6 @@ exports.MonitoringModule = MonitoringModule;
 exports.MonitoringModule = MonitoringModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            event_emitter_1.EventEmitterModule.forRoot(),
             alert_module_1.AlertModule,
         ],
         providers: [

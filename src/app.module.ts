@@ -10,6 +10,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SocketModule } from './modules/socket/socket.module';
 import { AlertModule } from './modules/alert/alert.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
     }),
     MongooseModule.forRoot(process.env.MONGODB_URL_PROD),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     BotModule,
     HealthModule,
     NotificationModule,

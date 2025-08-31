@@ -59,7 +59,7 @@ export class Alert {
   isActive: boolean;
 
   @Prop({ required: true, default: false })
-  eternal: boolean; // if true, the alert will never expire
+  infinite: boolean; // if true, the alert will never expire
 
   @Prop({ type: Object })
   conditions: Record<string, any>;

@@ -1,4 +1,14 @@
-import { IsString, IsEnum, IsNumber, IsOptional, IsArray, IsObject, Min, Max, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsObject,
+  Min,
+  Max,
+  IsBoolean,
+} from 'class-validator';
 import { MonitorEventType, Timeframe } from '../alert.entity';
 
 export class CreateAlertDto {
@@ -12,13 +22,12 @@ export class CreateAlertDto {
   type: MonitorEventType;
 
   @IsNumber()
-  @Min(1)
-  @Max(10)
+  @Min(0)
   count: number;
 
   @IsOptional()
   @IsBoolean()
-  eternalCount?: boolean;
+  infinite?: boolean;
 
   @IsEnum(Timeframe)
   timeframe: Timeframe;
@@ -40,5 +49,5 @@ export class CreateAlertDto {
   @IsObject()
   metadata?: Record<string, any>;
 
-  userId?: string
+  userId?: string;
 }

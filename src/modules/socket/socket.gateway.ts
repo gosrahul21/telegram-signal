@@ -32,6 +32,13 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (userId) {
       this.socketService.registerClient(userId, client);
       console.log(`✅ User ${userId} connected`);
+
+      // Send initial connection confirmation
+      client.emit('connected', {
+        message: 'Successfully connected to monitoring service',
+        userId,
+        timestamp: new Date(),
+      });
     }
   }
 
@@ -43,6 +50,148 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('ping')
   handlePing(@MessageBody() msg: string, @ConnectedSocket() client: Socket) {
     return { event: 'pong', data: `Hello, got your ping: ${msg}` };
+  }
+
+  @SubscribeMessage('get_connection_info')
+  async handleGetConnectionInfo(
+    @ConnectedSocket() client: Socket & { user: any },
+  ) {
+    try {
+      const userId = client.data.user.sub;
+      if (!userId) {
+        return { error: 'User not authenticated' };
+      }
+
+      const connectionInfo = {
+        userId,
+        connectionId: client.id,
+        connected: this.socketService.isUserConnected(userId),
+        totalConnections: this.socketService.getConnectionCount(),
+        timestamp: new Date(),
+      };
+
+      client.emit('connection_info', connectionInfo);
+      return connectionInfo;
+    } catch (error) {
+      console.error('Error getting connection info:', error);
+      return { error: 'Failed to get connection info' };
+    }
+  }
+
+  @SubscribeMessage('get_active_alerts')
+  async handleGetActiveAlerts(
+    @ConnectedSocket() client: Socket & { user: any },
+  ) {
+    try {
+      const userId = client.data.user.sub;
+      if (!userId) {
+        return { error: 'User not authenticated' };
+      }
+
+      // This would typically call the monitoring service to get user's active alerts
+      // For now, we'll send a placeholder response
+      const activeAlerts = {
+        userId,
+        alerts: [],
+        count: 0,
+        timestamp: new Date(),
+        message: 'Active alerts retrieved successfully',
+      };
+
+      client.emit('active_alerts', activeAlerts);
+      return activeAlerts;
+    } catch (error) {
+      console.error('Error getting active alerts:', error);
+      return { error: 'Failed to get active alerts' };
+    }
+  }
+
+  @SubscribeMessage('get_monitoring_summary')
+  async handleGetMonitoringSummary(
+    @ConnectedSocket() client: Socket & { user: any },
+  ) {
+    try {
+      const userId = client.data.user.sub;
+      if (!userId) {
+        return { error: 'User not authenticated' };
+      }
+
+      // This would typically call the monitoring service to get monitoring summary
+      const monitoringSummary = {
+        userId,
+        totalAlerts: 0,
+        activeAlerts: 0,
+        monitoringSymbols: [],
+        lastUpdate: new Date(),
+        status: 'active',
+        message: 'Monitoring summary retrieved successfully',
+      };
+
+      client.emit('monitoring_summary', monitoringSummary);
+      return monitoringSummary;
+    } catch (error) {
+      console.error('Error getting monitoring summary:', error);
+      return { error: 'Failed to get monitoring summary' };
+    }
+  }
+
+  @SubscribeMessage('test_alert')
+  async handleTestAlert(
+    @MessageBody() data: { symbol: string; eventType: string },
+    @ConnectedSocket() client: Socket & { user: any },
+  ) {
+    try {
+      const userId = client.data.user.sub;
+      if (!userId) {
+        return { error: 'User not authenticated' };
+      }
+
+      // Send a test alert to the user
+      const testAlert = {
+        type: 'test_alert',
+        data: {
+          alertId: 'test_' + Date.now(),
+          symbol: data.symbol || 'TEST',
+          eventType: data.eventType || 'test_event',
+          message: 'This is a test alert',
+          timestamp: new Date(),
+        },
+        message: 'Test alert sent successfully',
+      };
+
+      client.emit('test_alert', testAlert);
+      return { success: true, message: 'Test alert sent' };
+    } catch (error) {
+      console.error('Error sending test alert:', error);
+      return { error: 'Failed to send test alert' };
+    }
+  }
+
+  @SubscribeMessage('heartbeat')
+  async handleHeartbeat(@ConnectedSocket() client: Socket & { user: any }) {
+    try {
+      const userId = client.data.user.sub;
+      if (!userId) {
+        return { error: 'User not authenticated' };
+      }
+
+      // Send heartbeat response
+      const heartbeatResponse = {
+        type: 'heartbeat_response',
+        data: {
+          userId,
+          timestamp: new Date(),
+          serverTime: Date.now(),
+        },
+        message: 'Heartbeat received',
+      };
+
+      client.emit('heartbeat_response', heartbeatResponse);
+      return { success: true, message: 'Heartbeat received' };
+    } catch (error) {
+      console.error('Error handling heartbeat:', error);
+      return { error: 'Failed to handle heartbeat' };
+    }
   }
 
   afterInit(server: Server) {

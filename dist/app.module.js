@@ -19,6 +19,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const socket_module_1 = require("./modules/socket/socket.module");
 const alert_module_1 = require("./modules/alert/alert.module");
 const monitoring_module_1 = require("./modules/monitoring/monitoring.module");
+const event_emitter_1 = require("@nestjs/event-emitter");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -31,6 +32,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URL_PROD),
             schedule_1.ScheduleModule.forRoot(),
+            event_emitter_1.EventEmitterModule.forRoot(),
             bot_module_1.BotModule,
             health_module_1.HealthModule,
             notification_1.NotificationModule,

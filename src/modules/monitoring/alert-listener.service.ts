@@ -3,10 +3,11 @@ import { OnEvent } from '@nestjs/event-emitter';
 import {
   AlertCreatedEvent,
   AlertDeletedEvent,
-  AlertStatusChangedEvent,
   AlertUpdatedEvent,
 } from '../alert';
 import { MonitoringService } from './monitoring.service';
+import { EventsType } from '@/utils/constants/eventsType';
+import { MonitorEventType } from '../alert';
 
 @Injectable()
 export class AlertListenerService {
@@ -14,53 +15,60 @@ export class AlertListenerService {
 
   constructor(private readonly monitoringService: MonitoringService) {}
 
-  // Listen to alert events
-  @OnEvent('alert.created')
+  /** Handle new alert */
+  @OnEvent(EventsType.ALERT_CREATED)
   async handleAlertCreated(event: AlertCreatedEvent) {
+    const { alert } = event;
     this.logger.log(
-      `New alert created: ${event.alert.symbol} - ${event.alert.eventType} - ${event.alert.timeframe}`,
+      `New alert created: ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`,
     );
 
-    // if (event.alert.isActive) {
-    //   await this.monitoringService.addAlertToMonitoring(event.alert);
-    // }
+    // Skip if inactive as it would not affect the current monitoring
+    if (!alert.isActive) return;
+
+    await this.monitoringService.addMonitoring({
+      ...alert,
+    } as any);
   }
 
-  @OnEvent('alert.updated')
-  async handleAlertUpdated(event: AlertUpdatedEvent & any) {
+  /** Handle alert update */
+  @OnEvent(EventsType.ALERT_UPDATED)
+  async handleAlertUpdated(event: AlertUpdatedEvent) {
+    const { alert, previousData } = event;
+
     this.logger.log(
-      `Alert updated: ${event.alert.symbol} - ${event.alert.eventType} - ${event.alert.timeframe}`,
+      `Alert updated: ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`,
     );
 
-    // Remove old alert from monitoring
-    if (event.previousData) {
-      await this.monitoringService.removeAlertFromMonitoring(
-        event.previousData.uuid,
+    // Add new monitoring if active and valid
+    // if (alert.isActive) {
+    if (alert.count === 0 && (alert.count as any) !== 'INFINITE') {
+      await this.monitoringService.removeMonitoring(
+        alert.symbol,
+        alert.timeframe,
+        alert.eventType as MonitorEventType,
       );
+      return;
     }
 
-    // Add updated alert to monitoring if active
-    if (event.alert.isActive) {
-      await this.monitoringService.addAlertToMonitoring(event.alert);
-    }
+    await this.monitoringService.addMonitoring({
+      ...alert,
+    } as any);
   }
 
-  @OnEvent('alert.deleted')
-  async handleAlertDeleted(event: AlertDeletedEvent) {
-    this.logger.log(`Alert deleted: ${event.alertId}`);
-    await this.monitoringService.removeAlertFromMonitoring(event.alertId);
-  }
-
-  @OnEvent('alert.status.changed')
-  async handleAlertStatusChanged(event: AlertStatusChangedEvent & any) {
-    this.logger.log(
-      `Alert status changed: ${event.alert.symbol} - ${event.previousStatus} -> ${event.newStatus}`,
-    );
-
-    if (event.newStatus) {
-      await this.monitoringService.addAlertToMonitoring(event.alert);
-    } else {
-      await this.monitoringService.removeAlertFromMonitoring(event.alert.uuid);
+  @OnEvent(EventsType.ALERT_DELETED)
+  async handleAlertDeleted(alert: AlertDeletedEvent) {
+    try {
+      // if count is 0 then remove monitoring
+      if (alert.count === 0 && (alert.count as any) !== 'INFINITE') {
+        await this.monitoringService.removeMonitoring(
+          alert.symbol,
+          alert.timeframe,
+          alert.eventType as MonitorEventType,
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Error removing monitoring: ${error}`);
     }
   }
 }

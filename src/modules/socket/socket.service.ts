@@ -45,4 +45,49 @@ export class SocketService {
     }
     return false;
   }
+
+  // Broadcast to all connected users
+  broadcastToAll(event: string, data: any): number {
+    let sentCount = 0;
+    for (const client of this.clients.values()) {
+      try {
+        client.emit(event, data);
+        sentCount++;
+      } catch (error) {
+        console.error(`Error broadcasting to client ${client.id}:`, error);
+      }
+    }
+    return sentCount;
+  }
+
+  // Broadcast to specific users
+  broadcastToUsers(userIds: string[], event: string, data: any): number {
+    let sentCount = 0;
+    for (const userId of userIds) {
+      if (this.emitToUser(userId, event, data)) {
+        sentCount++;
+      }
+    }
+    return sentCount;
+  }
+
+  // Get all connected user IDs
+  getConnectedUserIds(): string[] {
+    return Array.from(this.clients.keys());
+  }
+
+  // Get connection count
+  getConnectionCount(): number {
+    return this.clients.size;
+  }
+
+  // Check if user is connected
+  isUserConnected(userId: string): boolean {
+    return this.clients.has(userId);
+  }
+
+  // Get client by user ID
+  getClient(userId: string): Socket | undefined {
+    return this.clients.get(userId);
+  }
 }

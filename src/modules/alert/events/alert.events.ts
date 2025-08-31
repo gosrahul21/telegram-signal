@@ -1,4 +1,4 @@
-import { Alert } from '../alert.entity';
+import { Alert, MonitorEventType } from '../alert.entity';
 
 // Base event interface
 export interface BaseAlertEvent {
@@ -20,6 +20,10 @@ export interface AlertUpdatedEvent extends BaseAlertEvent {
 export interface AlertDeletedEvent extends BaseAlertEvent {
   alertId: string;
   userId: string;
+  symbol: string;
+  timeframe: string;
+  eventType: MonitorEventType;
+  count: number | string;
 }
 
 // Alert triggered event
