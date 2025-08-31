@@ -77,4 +77,8 @@ export class NotificationService {
       alertId: payload.alertId,
     });
   }
+
+  async updateNotification(id: string, data: Partial<Notification>): Promise<Notification> {
+    return await this.notificationModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  }
 }
