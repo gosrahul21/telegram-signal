@@ -14,81 +14,65 @@ exports.AlertListenerService = void 0;
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const alert_service_1 = require("./alert.service");
-const alert_events_1 = require("./events/alert.events");
+const eventsType_1 = require("../../utils/constants/eventsType");
+const AlertFor_1 = require("../../utils/types/AlertFor");
 let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
     constructor(alertService) {
         this.alertService = alertService;
         this.logger = new common_1.Logger(AlertListenerService_1.name);
     }
-    handleAlertTriggered(event) {
-        this.logger.log(`Alert triggered: ${event.alert.symbol} - ${event.alert.eventType}`);
-        this.sendAlertNotification(event.alert, event.triggerData);
-        this.executeTradingLogic(event.alert, event.triggerData);
-        this.updateAlertAnalytics(event.alert, event.triggerData);
-        this.logToExternalService('alert_triggered', event);
-    }
-    handleAlertStatusChanged(event) {
-        this.logger.log(`Alert status changed: ${event.alert.symbol} - ${event.previousStatus} -> ${event.newStatus}`);
-        if (event.newStatus) {
-            this.activateAlertMonitoring(event.alert);
-        }
-        else {
-            this.deactivateAlertMonitoring(event.alert);
-        }
-        this.logToExternalService('alert_status_changed', event);
-    }
-    async notifyUserAboutNewAlert(alert) {
-        this.logger.log(`Notifying user ${alert.userId} about new ${alert.type} alert for ${alert.symbol}`);
-    }
-    async startMonitoringAlert(alert) {
-        this.logger.log(`Starting monitoring for ${alert.type} alert on ${alert.symbol}`);
-    }
-    async logToExternalService(action, data) {
-        this.logger.log(`Logging ${action} to external service`);
-    }
-    async checkForCriticalChanges(previous, current) {
-        if (previous.conditions !== current.conditions) {
-            this.logger.warn(`Critical change detected in alert conditions for ${current.symbol}`);
+    async handleMonitoringTriggered(payload) {
+        const { symbol, timeframe, eventType } = payload;
+        this.logger.log(`Received monitoring event for ${symbol} ${timeframe} ${eventType}`);
+        const alerts = await this.alertService.findActiveAlertsBySymbolTimeframeEventType(symbol, timeframe, eventType);
+        for (const alert of alerts) {
+            let updatedCount = alert.count;
+            if (!alert.infinite && updatedCount > 0) {
+                updatedCount -= 1;
+                await this.alertService.update(alert.uuid, { count: updatedCount });
+            }
+            if (alert.alertFor === AlertFor_1.AlertFor.USER) {
+                await this.alertService.emitCustomEvent(eventsType_1.EventsType.ALERT_TRIGGERED_USER, {
+                    ...payload,
+                    alertId: alert.uuid,
+                    userId: alert.userId,
+                    count: updatedCount,
+                });
+            }
+            else if (alert.alertFor === AlertFor_1.AlertFor.ORDER) {
+                await this.alertService.emitCustomEvent(eventsType_1.EventsType.ALERT_TRIGGERED_ORDER, {
+                    ...payload,
+                    alertId: alert.uuid,
+                    orderId: alert.orderId,
+                    userId: alert.userId,
+                    count: updatedCount,
+                });
+            }
         }
     }
-    async updateMonitoringConfiguration(alert) {
-        this.logger.log(`Updating monitoring configuration for ${alert.symbol}`);
-    }
-    async stopMonitoringAlert(alertId) {
-        this.logger.log(`Stopping monitoring for alert ${alertId}`);
-    }
-    async cleanupAlertResources(alertId) {
-        this.logger.log(`Cleaning up resources for alert ${alertId}`);
-    }
-    async sendAlertNotification(alert, triggerData) {
-        this.logger.log(`Sending notification for ${alert.type} alert on ${alert.symbol}`);
-    }
-    async executeTradingLogic(alert, triggerData) {
-        this.logger.log(`Executing trading logic for ${alert.type} alert on ${alert.symbol}`);
-    }
-    async updateAlertAnalytics(alert, triggerData) {
-        this.logger.log(`Updating analytics for ${alert.type} alert on ${alert.symbol}`);
-    }
-    async activateAlertMonitoring(alert) {
-        this.logger.log(`Activating monitoring for ${alert.symbol}`);
-    }
-    async deactivateAlertMonitoring(alert) {
-        this.logger.log(`Deactivating monitoring for ${alert.symbol}`);
+    async handleOrderEvents(payload) {
+        this.logger.log(`Received order event: ${JSON.stringify(payload)}`);
+        if (payload.type === 'FILLED') {
+            await this.alertService.emitCustomEvent(eventsType_1.EventsType.ALERT_TRIGGERED_ORDER, payload);
+        }
     }
 };
 exports.AlertListenerService = AlertListenerService;
 __decorate([
-    (0, event_emitter_1.OnEvent)(alert_events_1.ALERT_EVENTS.TRIGGERED),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.MONITORING_TRIGGERED, { async: true }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
-], AlertListenerService.prototype, "handleAlertTriggered", null);
+    __metadata("design:returntype", Promise)
+], AlertListenerService.prototype, "handleMonitoringTriggered", null);
 __decorate([
-    (0, event_emitter_1.OnEvent)(alert_events_1.ALERT_EVENTS.STATUS_CHANGED),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ORDER_CREATED, { async: true }),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ORDER_UPDATED, { async: true }),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ORDER_CANCELLED, { async: true }),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ORDER_FILLED, { async: true }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
-], AlertListenerService.prototype, "handleAlertStatusChanged", null);
+    __metadata("design:returntype", Promise)
+], AlertListenerService.prototype, "handleOrderEvents", null);
 exports.AlertListenerService = AlertListenerService = AlertListenerService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [alert_service_1.AlertService])

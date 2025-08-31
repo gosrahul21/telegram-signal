@@ -48,6 +48,17 @@ __decorate([
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Alert.prototype, "userId", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({
+        required: false,
+        type: mongoose_2.Types.ObjectId,
+        ref: 'Order',
+        nullable: true,
+        unique: true,
+        sparse: true,
+    }),
+    __metadata("design:type", mongoose_2.Types.ObjectId)
+], Alert.prototype, "orderId", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ required: true, enum: MonitorEventType }),
     __metadata("design:type", String)
 ], Alert.prototype, "eventType", void 0);

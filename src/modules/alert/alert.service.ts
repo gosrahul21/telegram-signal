@@ -210,6 +210,21 @@ export class AlertService {
     });
   }
 
+  async findActiveAlertsBySymbolTimeframeEventType(
+    symbol: string,
+    timeframe: string,
+    eventType: string,
+  ): Promise<Alert[]> {
+    return await this.alertModel
+      .find({
+        symbol,
+        timeframe: timeframe,
+        eventType: eventType,
+        isActive: true,
+      })
+      .lean();
+  }
+
   // Method to manually emit custom events
   async emitCustomEvent(eventName: string, eventData: any): Promise<void> {
     this.eventEmitter.emit(eventName, {

@@ -1,14 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { AlertService } from './alert.service';
-import { 
-  AlertCreatedEvent, 
-  AlertUpdatedEvent, 
-  AlertDeletedEvent, 
-  AlertTriggeredEvent, 
-  AlertStatusChangedEvent,
-  ALERT_EVENTS 
-} from './events/alert.events';
+import { EventsType } from '@/utils/constants/eventsType';
+import { AlertFor } from '@/utils/types/AlertFor';
 
 @Injectable()
 export class AlertListenerService {
@@ -16,101 +10,75 @@ export class AlertListenerService {
 
   constructor(private readonly alertService: AlertService) {}
 
+  /**
+   * Listener for monitoring triggered events
+   */
+  @OnEvent(EventsType.MONITORING_TRIGGERED, { async: true })
+  async handleMonitoringTriggered(payload: any) {
+    const { symbol, timeframe, eventType } = payload;
+    this.logger.log(
+      `Received monitoring event for ${symbol} ${timeframe} ${eventType}`,
+    );
 
+    // Find matching active alerts
+    const alerts =
+      await this.alertService.findActiveAlertsBySymbolTimeframeEventType(
+        symbol,
+        timeframe,
+        eventType,
+      );
 
-  @OnEvent(ALERT_EVENTS.TRIGGERED)
-  handleAlertTriggered(event: AlertTriggeredEvent) {
-    this.logger.log(`Alert triggered: ${event.alert.symbol} - ${event.alert.eventType}`);
-    
-    // Example: Send notification to user
-    this.sendAlertNotification(event.alert, event.triggerData);
-    
-    // Example: Execute trading logic
-    this.executeTradingLogic(event.alert, event.triggerData);
-    
-    // Example: Update analytics
-    this.updateAlertAnalytics(event.alert, event.triggerData);
-    
-    // Example: Log to external service
-    this.logToExternalService('alert_triggered', event);
-  }
+    for (const alert of alerts) {
+      let updatedCount = alert.count;
 
-  @OnEvent(ALERT_EVENTS.STATUS_CHANGED)
-  handleAlertStatusChanged(event: AlertStatusChangedEvent) {
-    this.logger.log(`Alert status changed: ${event.alert.symbol} - ${event.previousStatus} -> ${event.newStatus}`);
-    
-    if (event.newStatus) {
-      // Alert activated
-      this.activateAlertMonitoring(event.alert);
-    } else {
-      // Alert deactivated
-      this.deactivateAlertMonitoring(event.alert);
-    }
-    
-    // Example: Log to external service
-    this.logToExternalService('alert_status_changed', event);
-  }
+      if (!alert.infinite && updatedCount > 0) {
+        updatedCount -= 1;
+        await this.alertService.update(alert.uuid, { count: updatedCount });
+      }
 
-  // Example helper methods
-  private async notifyUserAboutNewAlert(alert: any) {
-    // Implementation for notifying user about new alert
-    this.logger.log(`Notifying user ${alert.userId} about new ${alert.type} alert for ${alert.symbol}`);
-  }
-
-  private async startMonitoringAlert(alert: any) {
-    // Implementation for starting to monitor an alert
-    this.logger.log(`Starting monitoring for ${alert.type} alert on ${alert.symbol}`);
-  }
-
-  private async logToExternalService(action: string, data: any) {
-    // Implementation for logging to external service
-    this.logger.log(`Logging ${action} to external service`);
-  }
-
-  private async checkForCriticalChanges(previous: any, current: any) {
-    // Implementation for checking critical changes
-    if (previous.conditions !== current.conditions) {
-      this.logger.warn(`Critical change detected in alert conditions for ${current.symbol}`);
+      // Decide which event to emit (user / order)
+      if (alert.alertFor === AlertFor.USER) {
+        await this.alertService.emitCustomEvent(
+          EventsType.ALERT_TRIGGERED_USER,
+          {
+            ...payload,
+            alertId: alert.uuid,
+            userId: alert.userId,
+            count: updatedCount,
+          },
+        );
+      } else if (alert.alertFor === AlertFor.ORDER) {
+        await this.alertService.emitCustomEvent(
+          EventsType.ALERT_TRIGGERED_ORDER,
+          {
+            ...payload,
+            alertId: alert.uuid,
+            orderId: alert.orderId,
+            userId: alert.userId,
+            count: updatedCount,
+          },
+        );
+      }
     }
   }
 
-  private async updateMonitoringConfiguration(alert: any) {
-    // Implementation for updating monitoring configuration
-    this.logger.log(`Updating monitoring configuration for ${alert.symbol}`);
-  }
+  /**
+   * Listener for order events
+   */
+  @OnEvent(EventsType.ORDER_CREATED, { async: true })
+  @OnEvent(EventsType.ORDER_UPDATED, { async: true })
+  @OnEvent(EventsType.ORDER_CANCELLED, { async: true })
+  @OnEvent(EventsType.ORDER_FILLED, { async: true })
+  async handleOrderEvents(payload: any) {
+    this.logger.log(`Received order event: ${JSON.stringify(payload)}`);
 
-  private async stopMonitoringAlert(alertId: string) {
-    // Implementation for stopping alert monitoring
-    this.logger.log(`Stopping monitoring for alert ${alertId}`);
-  }
-
-  private async cleanupAlertResources(alertId: string) {
-    // Implementation for cleaning up alert resources
-    this.logger.log(`Cleaning up resources for alert ${alertId}`);
-  }
-
-  private async sendAlertNotification(alert: any, triggerData: any) {
-    // Implementation for sending alert notification
-    this.logger.log(`Sending notification for ${alert.type} alert on ${alert.symbol}`);
-  }
-
-  private async executeTradingLogic(alert: any, triggerData: any) {
-    // Implementation for executing trading logic
-    this.logger.log(`Executing trading logic for ${alert.type} alert on ${alert.symbol}`);
-  }
-
-  private async updateAlertAnalytics(alert: any, triggerData: any) {
-    // Implementation for updating analytics
-    this.logger.log(`Updating analytics for ${alert.type} alert on ${alert.symbol}`);
-  }
-
-  private async activateAlertMonitoring(alert: any) {
-    // Implementation for activating alert monitoring
-    this.logger.log(`Activating monitoring for ${alert.symbol}`);
-  }
-
-  private async deactivateAlertMonitoring(alert: any) {
-    // Implementation for deactivating alert monitoring
-    this.logger.log(`Deactivating monitoring for ${alert.symbol}`);
+    // Here you can hook logic if alerts depend on order lifecycle
+    // Example: trigger alerts when an order is filled
+    if (payload.type === 'FILLED') {
+      await this.alertService.emitCustomEvent(
+        EventsType.ALERT_TRIGGERED_ORDER,
+        payload,
+      );
+    }
   }
 }

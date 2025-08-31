@@ -24,6 +24,7 @@ export declare enum Timeframe {
 export declare class Alert {
     symbol: string;
     userId: Types.ObjectId;
+    orderId?: Types.ObjectId;
     eventType: MonitorEventType;
     count: number;
     uuid: string;

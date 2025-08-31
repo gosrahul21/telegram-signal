@@ -38,6 +38,16 @@ export class Alert {
   @Prop({ required: true, type: Types.ObjectId, ref: 'User' })
   userId: Types.ObjectId;
 
+  @Prop({
+    required: false,
+    type: Types.ObjectId,
+    ref: 'Order',
+    nullable: true,
+    unique: true,
+    sparse: true,
+  })
+  orderId?: Types.ObjectId;
+
   @Prop({ required: true, enum: MonitorEventType })
   eventType: MonitorEventType;
 

@@ -19,5 +19,6 @@ export declare class AlertService {
     remove(id: string): Promise<void>;
     findActiveAlerts(): Promise<Alert[]>;
     findAlertsBySymbol(symbol: string): Promise<Alert[]>;
+    findActiveAlertsBySymbolTimeframeEventType(symbol: string, timeframe: string, eventType: string): Promise<Alert[]>;
     emitCustomEvent(eventName: string, eventData: any): Promise<void>;
 }

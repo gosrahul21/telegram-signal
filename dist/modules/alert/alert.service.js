@@ -161,6 +161,16 @@ let AlertService = class AlertService {
             isActive: true,
         });
     }
+    async findActiveAlertsBySymbolTimeframeEventType(symbol, timeframe, eventType) {
+        return await this.alertModel
+            .find({
+            symbol,
+            timeframe: timeframe,
+            eventType: eventType,
+            isActive: true,
+        })
+            .lean();
+    }
     async emitCustomEvent(eventName, eventData) {
         this.eventEmitter.emit(eventName, {
             ...eventData,

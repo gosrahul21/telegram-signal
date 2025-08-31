@@ -8,165 +8,85 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var NotificationService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationService = void 0;
 const common_1 = require("@nestjs/common");
-const bot_service_1 = require("../../bot/bot.service");
+const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_2 = require("mongoose");
+const event_emitter_1 = require("@nestjs/event-emitter");
+const notification_entity_1 = require("./notification.entity");
+const eventsType_1 = require("../../utils/constants/eventsType");
 let NotificationService = NotificationService_1 = class NotificationService {
-    constructor(botService) {
-        this.botService = botService;
+    constructor(notificationModel, eventEmitter) {
+        this.notificationModel = notificationModel;
+        this.eventEmitter = eventEmitter;
         this.logger = new common_1.Logger(NotificationService_1.name);
-        this.connectedUsers = new Map();
-        this.bot = this.botService.getBot();
     }
-    async sendTelegramNotification(userId, message) {
-        try {
-            await this.bot.api.sendMessage(userId, message, {
-                parse_mode: 'HTML',
-                link_preview_options: { is_disabled: true },
-            });
-            this.logger.log(`Telegram notification sent to user ${userId}`);
-            return true;
-        }
-        catch (error) {
-            this.logger.error(`Failed to send Telegram notification to user ${userId}:`, error);
-            return false;
-        }
+    async createNotification(data) {
+        const notification = new this.notificationModel({
+            ...data,
+            userId: new mongoose_2.Types.ObjectId(data.userId),
+        });
+        const savedNotification = await notification.save();
+        this.logger.log(`Notification created for user ${savedNotification.userId}`);
+        this.eventEmitter.emit(eventsType_1.EventsType.NOTIFICATION_CREATED, {
+            ...savedNotification.toObject(),
+            timestamp: new Date(),
+        });
+        return savedNotification;
     }
-    async sendTelegramNotificationToMultiple(userIds, message) {
-        const success = [];
-        const failed = [];
-        for (const userId of userIds) {
-            try {
-                await this.bot.api.sendMessage(userId, message, {
-                    parse_mode: 'HTML',
-                    link_preview_options: { is_disabled: true },
-                });
-                success.push(userId);
-            }
-            catch (error) {
-                this.logger.error(`Failed to send Telegram notification to user ${userId}:`, error);
-                failed.push(userId);
-            }
-        }
-        this.logger.log(`Sent notifications to ${success.length} users, failed for ${failed.length} users`);
-        return { success, failed };
+    async handleUserAlert(payload) {
+        this.logger.log(`Creating USER notification: ${JSON.stringify(payload)}`);
+        await this.createNotification({
+            userId: payload.userId,
+            type: notification_entity_1.NotificationType.ALERT_TRIGGERED,
+            priority: notification_entity_1.NotificationPriority.HIGH,
+            title: `Alert triggered for ${payload.symbol}`,
+            message: `Your alert (${payload.eventType}) was triggered on ${payload.symbol} (${payload.timeframe}).`,
+            data: payload,
+            symbol: payload.symbol,
+            timeframe: payload.timeframe,
+            eventType: payload.eventType,
+            alertId: payload.alertId,
+        });
     }
-    async sendSignalNotification(userId, signalData) {
-        const message = this.formatSignalMessage(signalData);
-        return this.sendTelegramNotification(userId, message);
-    }
-    async sendAlertNotification(userId, alertData) {
-        const message = this.formatAlertMessage(alertData);
-        return this.sendTelegramNotification(userId, message);
-    }
-    async sendStatusNotification(userId, statusData) {
-        const message = this.formatStatusMessage(statusData);
-        return this.sendTelegramNotification(userId, message);
-    }
-    addWebSocketConnection(userId, connection) {
-        this.connectedUsers.set(userId, connection);
-        this.logger.log(`WebSocket connection added for user ${userId}`);
-    }
-    removeWebSocketConnection(userId) {
-        this.connectedUsers.delete(userId);
-        this.logger.log(`WebSocket connection removed for user ${userId}`);
-    }
-    sendWebSocketMessage(userId, message) {
-        const connection = this.connectedUsers.get(userId);
-        if (connection) {
-            try {
-                connection.send(JSON.stringify(message));
-                this.logger.log(`WebSocket message sent to user ${userId}`);
-                return true;
-            }
-            catch (error) {
-                this.logger.error(`Failed to send WebSocket message to user ${userId}:`, error);
-                this.removeWebSocketConnection(userId);
-                return false;
-            }
-        }
-        return false;
-    }
-    broadcastWebSocketMessage(message) {
-        const success = [];
-        const failed = [];
-        for (const [userId, connection] of this.connectedUsers.entries()) {
-            try {
-                connection.send(JSON.stringify(message));
-                success.push(userId);
-            }
-            catch (error) {
-                this.logger.error(`Failed to send WebSocket message to user ${userId}:`, error);
-                failed.push(userId);
-                this.removeWebSocketConnection(userId);
-            }
-        }
-        this.logger.log(`Broadcasted WebSocket message to ${success.length} users, failed for ${failed.length} users`);
-        return { success, failed };
-    }
-    async sendMultiChannelNotification(payload) {
-        const [telegramResult, websocketResult] = await Promise.allSettled([
-            this.sendTelegramNotification(payload.userId, payload.message),
-            this.sendWebSocketMessage(payload.userId, {
-                type: payload.type || 'general',
-                data: payload.data || payload.message,
-                timestamp: Date.now(),
-            })
-        ]);
-        return {
-            telegram: telegramResult.status === 'fulfilled' ? telegramResult.value : false,
-            websocket: websocketResult.status === 'fulfilled' ? websocketResult.value : false,
-        };
-    }
-    getConnectedUsersCount() {
-        return this.connectedUsers.size;
-    }
-    getConnectedUserIds() {
-        return Array.from(this.connectedUsers.keys());
-    }
-    formatSignalMessage(signalData) {
-        return `
-🚨 <b>NEW SIGNAL ALERT</b> 🚨
-
-📊 <b>Symbol:</b> ${signalData.symbol || 'N/A'}
-📈 <b>Type:</b> ${signalData.type || 'N/A'}
-💰 <b>Price:</b> ${signalData.price || 'N/A'}
-📊 <b>RSI:</b> ${signalData.rsi || 'N/A'}
-⏰ <b>Time:</b> ${new Date().toLocaleString()}
-
-${signalData.description || ''}
-    `.trim();
-    }
-    formatAlertMessage(alertData) {
-        return `
-⚠️ <b>ALERT</b> ⚠️
-
-📊 <b>Symbol:</b> ${alertData.symbol || 'N/A'}
-🔔 <b>Condition:</b> ${alertData.condition || 'N/A'}
-💰 <b>Current Price:</b> ${alertData.price || 'N/A'}
-⏰ <b>Time:</b> ${new Date().toLocaleString()}
-
-${alertData.message || ''}
-    `.trim();
-    }
-    formatStatusMessage(statusData) {
-        return `
-📊 <b>STATUS UPDATE</b> 📊
-
-📈 <b>Symbol:</b> ${statusData.symbol || 'N/A'}
-📊 <b>Status:</b> ${statusData.status || 'N/A'}
-💰 <b>Price:</b> ${statusData.price || 'N/A'}
-⏰ <b>Time:</b> ${new Date().toLocaleString()}
-
-${statusData.details || ''}
-    `.trim();
+    async handleOrderAlert(payload) {
+        this.logger.log(`Creating ORDER notification: ${JSON.stringify(payload)}`);
+        await this.createNotification({
+            userId: payload.userId,
+            type: notification_entity_1.NotificationType.ORDER_STATUS,
+            priority: notification_entity_1.NotificationPriority.MEDIUM,
+            title: `Order update`,
+            message: `Your order alert (${payload.eventType}) was triggered for ${payload.symbol}.`,
+            data: payload,
+            symbol: payload.symbol,
+            timeframe: payload.timeframe,
+            eventType: payload.eventType,
+            alertId: payload.alertId,
+        });
     }
 };
 exports.NotificationService = NotificationService;
+__decorate([
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ALERT_TRIGGERED_USER, { async: true }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationService.prototype, "handleUserAlert", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ALERT_TRIGGERED_ORDER, { async: true }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationService.prototype, "handleOrderAlert", null);
 exports.NotificationService = NotificationService = NotificationService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [bot_service_1.BotService])
+    __param(0, (0, mongoose_1.InjectModel)(notification_entity_1.Notification.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        event_emitter_1.EventEmitter2])
 ], NotificationService);
 //# sourceMappingURL=notification.service.js.map
