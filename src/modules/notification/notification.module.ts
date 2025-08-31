@@ -5,7 +5,7 @@ import { NotificationService } from './notification.service';
 import { NotificationGateway } from './notification.gateway';
 import { NotificationController } from './notification.controller';
 import { NotificationPersistenceService } from './notification-persistence.service';
-import { NotificationEventListenerService } from './notification-event-listener.service';
+// import { NotificationEventListenerService } from './notification-event-listener.service';
 import { Notification, NotificationSchema } from './notification.entity';
 import { BotModule } from '../../bot/bot.module';
 
@@ -22,13 +22,13 @@ import { BotModule } from '../../bot/bot.module';
     NotificationService,
     NotificationGateway,
     NotificationPersistenceService,
-    NotificationEventListenerService,
+    // NotificationEventListenerService,
   ],
   exports: [
     NotificationService,
     NotificationGateway,
     NotificationPersistenceService,
-    NotificationEventListenerService,
+    // NotificationEventListenerService,
   ],
 })
 export class NotificationModule {}

@@ -1,3 +1,4 @@
+import { AlertFor } from '@/utils/types/AlertFor';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,12 +18,6 @@ export enum MonitorEventType {
   RSI_CROSSOVER_HIGH = 'rsi_crossover_high',
   MACD_CROSSOVER_LOW = 'macd_crossover_low',
   MACD_CROSSOVER_HIGH = 'macd_crossover_high',
-  // STOCHASTIC_LOW = 'stochastic_low',
-  // STOCHASTIC_CROSSOVER_HIGH = 'stochastic_crossover_high',
-  // VOLUME_LOW = 'volume_low',
-  // VOLUME_HIGH = 'volume_high',
-  // PRICE_ACTION_LOW = 'price_action_low',
-  // PRICE_ACTION_HIGH = 'price_action_high',
 }
 
 export enum Timeframe {
@@ -46,7 +41,7 @@ export class Alert {
   @Prop({ required: true, enum: MonitorEventType })
   eventType: MonitorEventType;
 
-  @Prop({ required: true, min: 1})
+  @Prop({ required: true, min: 1 })
   count: number; // max number of times the alert to triggered
 
   @Prop({ required: true, unique: true, default: () => uuidv4() })
@@ -72,6 +67,9 @@ export class Alert {
 
   @Prop({ type: String })
   description?: string;
+
+  @Prop({ type: String, enum: AlertFor, default: AlertFor.USER })
+  alertFor: AlertFor;
 
   @Prop({ type: [String], default: [] })
   tags: string[];

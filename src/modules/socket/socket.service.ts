@@ -10,10 +10,10 @@ export class SocketService {
   sendHeartbeat(client: Socket) {
     this.heartbeatInterval = setInterval(() => {
       for (const client of this.clients.values()) {
-        console.log('Sending heartbeat to client', client.id);
+        // console.log('Sending heartbeat to client', client.id);
         client.emit('heartbeat', { message: 'Heartbeat' });
       }
-    }, 2000);
+    }, 10000);
   }
 
   stopHeartbeat() {

@@ -13,8 +13,8 @@ export class Monitoring {
   @Prop({ required: true, enum: MonitorEventType })
   eventType: MonitorEventType;
 
-  @Prop({ required: true, type: Number })
-  count: number | 'INFINITE';
+  @Prop({ required: true, type: String })
+  count: string | 'INFINITE'; // number type string for infinite monitoring
 
   monitoringInterval: NodeJS.Timeout;
 }

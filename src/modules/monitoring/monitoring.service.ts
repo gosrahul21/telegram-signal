@@ -12,6 +12,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { MonitorEventType } from '../alert';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventsType } from '@/utils/constants/eventsType';
+import { CreateMonitoringDto } from './dto/create-monitoring.dto';
 
 @Injectable()
 export class MonitoringService implements OnModuleInit, OnModuleDestroy {
@@ -28,6 +29,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this.logger.log('Monitoring service initialized');
+    this.loadMonitorings();
   }
 
   async loadMonitorings() {
@@ -52,7 +54,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Add new monitoring */
-  async addMonitoring(monitoring: Monitoring) {
+  async addMonitoring(monitoring: CreateMonitoringDto) {
     const existing = this.monitorings.find(
       (m) =>
         m.symbol === monitoring.symbol &&
@@ -67,6 +69,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
         );
       }
       existing.count = monitoring.count;
+      this.logger.log(`Updating monitoring for ${monitoring.symbol} - ${monitoring.eventType} - ${monitoring.timeframe}`, monitoring.count);
       await this.monitoringModel.updateOne(
         {
           symbol: monitoring.symbol,
@@ -76,8 +79,8 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
         { $set: { count: monitoring.count } },
       );
     } else {
-      this.monitorings.push(monitoring);
-      monitoring.monitoringInterval = this.startMonitoringByType(monitoring);
+      this.monitorings.push(monitoring as Monitoring);
+      (monitoring as Monitoring).monitoringInterval = this.startMonitoringByType(monitoring as Monitoring);
 
       this.logger.log(
         `Started monitoring for ${monitoring.symbol} - ${monitoring.eventType} - ${monitoring.timeframe}`,
@@ -119,7 +122,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   /** Core monitoring by type */
   private startMonitoringByType(monitoring: Monitoring): NodeJS.Timeout {
     const { symbol, timeframe, eventType } = monitoring;
-
+    this.logger.log(`Starting monitoring for ${symbol} - ${eventType} - ${timeframe}`);
     const interval = setInterval(async () => {
       try {
         let conditionMet = false;
@@ -208,7 +211,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
 
       // descrease count if non-infinite and if count is 0 then remove monitoring for non-infinite monitorings
       if (monitoring.count !== 'INFINITE') {
-        monitoring.count = (monitoring.count as number) - 1;
+        monitoring.count = (parseInt(monitoring.count) - 1).toString();
 
         await this.monitoringModel.updateOne(
           {
@@ -219,7 +222,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
           { $set: { count: monitoring.count } },
         );
 
-        if (monitoring.count <= 0) {
+        if (parseInt(monitoring.count) <= 0) {
           await this.removeMonitoring(
             monitoring.symbol,
             monitoring.timeframe,

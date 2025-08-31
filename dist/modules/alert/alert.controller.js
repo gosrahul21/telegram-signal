@@ -24,6 +24,7 @@ let AlertController = class AlertController {
         this.alertService = alertService;
     }
     create(createAlertDto) {
+        console.log('createAlertDto', createAlertDto);
         return this.alertService.create(createAlertDto);
     }
     findAll(query) {
@@ -43,12 +44,6 @@ let AlertController = class AlertController {
     }
     update(id, updateAlertDto) {
         return this.alertService.update(id, updateAlertDto);
-    }
-    toggleActive(id) {
-        return this.alertService.toggleActive(id);
-    }
-    incrementTriggerCount(id) {
-        return this.alertService.incrementTriggerCount(id);
     }
     remove(id) {
         return this.alertService.remove(id);
@@ -106,20 +101,6 @@ __decorate([
     __metadata("design:paramtypes", [String, update_alert_dto_1.UpdateAlertDto]),
     __metadata("design:returntype", void 0)
 ], AlertController.prototype, "update", null);
-__decorate([
-    (0, common_1.Patch)(':id/toggle'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], AlertController.prototype, "toggleActive", null);
-__decorate([
-    (0, common_1.Patch)(':id/increment-trigger'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], AlertController.prototype, "incrementTriggerCount", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),

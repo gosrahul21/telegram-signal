@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { NotificationType, NotificationPriority } from './notification.entity';
 import {
-  AlertTriggeredNotificationEvent,
-  PriceTargetNotificationEvent,
-  TechnicalIndicatorNotificationEvent,
-  OrderStatusNotificationEvent,
-  MarketAlertNotificationEvent,
-} from '../monitoring/notification.service';
+    // AlertTriggeredNotificationEvent,
+    // PriceTargetNotificationEvent,
+    // TechnicalIndicatorNotificationEvent,
+    // OrderStatusNotificationEvent,
+    // MarketAlertNotificationEvent,
+  } from '../monitoring/alert-listener.service';
 
 export interface FormattedNotification {
   type: NotificationType;
@@ -32,7 +32,7 @@ export class NotificationFormatterService {
    * Format alert triggered notification for database storage
    */
   formatAlertTriggeredForDatabase(
-    event: AlertTriggeredNotificationEvent,
+    event: any,
   ): FormattedNotification {
     const { alert, triggerData } = event;
 
@@ -59,7 +59,7 @@ export class NotificationFormatterService {
    * Format alert triggered notification for WebSocket delivery
    */
   formatAlertTriggeredForSocket(
-    event: AlertTriggeredNotificationEvent,
+    event: any,
   ): FormattedSocketMessage {
     const { alert, triggerData } = event;
 
@@ -83,7 +83,7 @@ export class NotificationFormatterService {
    * Format price target notification for database storage
    */
   formatPriceTargetForDatabase(
-    event: PriceTargetNotificationEvent,
+    event: any,
   ): FormattedNotification {
     return {
       type: NotificationType.PRICE_TARGET,
@@ -107,7 +107,7 @@ export class NotificationFormatterService {
    * Format price target notification for WebSocket delivery
    */
   formatPriceTargetForSocket(
-    event: PriceTargetNotificationEvent,
+    event: any,
   ): FormattedSocketMessage {
     return {
       type: 'price_target',
@@ -127,7 +127,7 @@ export class NotificationFormatterService {
    * Format technical indicator notification for database storage
    */
   formatTechnicalIndicatorForDatabase(
-    event: TechnicalIndicatorNotificationEvent,
+    event: any,
   ): FormattedNotification {
     return {
       type: NotificationType.TECHNICAL_INDICATOR,
@@ -151,7 +151,7 @@ export class NotificationFormatterService {
    * Format technical indicator notification for WebSocket delivery
    */
   formatTechnicalIndicatorForSocket(
-    event: TechnicalIndicatorNotificationEvent,
+    event: any,
   ): FormattedSocketMessage {
     return {
       type: 'technical_indicator',
@@ -171,7 +171,7 @@ export class NotificationFormatterService {
    * Format order status notification for database storage
    */
   formatOrderStatusForDatabase(
-    event: OrderStatusNotificationEvent,
+    event: any,
   ): FormattedNotification {
     return {
       type: NotificationType.ORDER_STATUS,
@@ -194,7 +194,7 @@ export class NotificationFormatterService {
    * Format order status notification for WebSocket delivery
    */
   formatOrderStatusForSocket(
-    event: OrderStatusNotificationEvent,
+    event: any,
   ): FormattedSocketMessage {
     return {
       type: 'order_status',
@@ -214,7 +214,7 @@ export class NotificationFormatterService {
    * Format market alert notification for database storage
    */
   formatMarketAlertForDatabase(
-    event: MarketAlertNotificationEvent,
+    event: any,
   ): FormattedNotification {
     const priority = this.getPriorityFromSeverity(event.severity);
 
@@ -239,23 +239,6 @@ export class NotificationFormatterService {
   /**
    * Format market alert notification for WebSocket delivery
    */
-  formatMarketAlertForSocket(
-    event: MarketAlertNotificationEvent,
-  ): FormattedSocketMessage {
-    return {
-      type: 'market_alert',
-      data: {
-        symbol: event.symbol,
-        alertType: event.alertType,
-        message: event.message,
-        severity: event.severity,
-        data: event.data,
-        timestamp: event.timestamp,
-      },
-      message: event.message,
-      timestamp: event.timestamp,
-    };
-  }
 
   /**
    * Helper method to convert severity to priority

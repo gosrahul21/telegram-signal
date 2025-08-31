@@ -9,9 +9,16 @@ import { EMAService } from './ema.service';
 import { AlertModule } from '../alert/alert.module';
 import { AlertListenerService } from './alert-listener.service';
 import { BinancePriceApiService } from '@/services/binance-price-api.service';
+import { Monitoring, MonitoringSchema } from './monitoring.entity';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
-  imports: [AlertModule],
+  imports: [
+    AlertModule,
+    MongooseModule.forFeature([
+      { name: Monitoring.name, schema: MonitoringSchema },
+    ]),
+  ],
   providers: [
     MonitoringService,
     TechnicalAnalysisService,

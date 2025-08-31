@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlertSchema = exports.Alert = exports.Timeframe = exports.MonitorEventType = void 0;
+const AlertFor_1 = require("../../utils/types/AlertFor");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const uuid_1 = require("uuid");
@@ -69,7 +70,7 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: true, default: false }),
     __metadata("design:type", Boolean)
-], Alert.prototype, "eternal", void 0);
+], Alert.prototype, "infinite", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: Object }),
     __metadata("design:type", Object)
@@ -86,6 +87,10 @@ __decorate([
     (0, mongoose_1.Prop)({ type: String }),
     __metadata("design:type", String)
 ], Alert.prototype, "description", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: String, enum: AlertFor_1.AlertFor, default: AlertFor_1.AlertFor.USER }),
+    __metadata("design:type", String)
+], Alert.prototype, "alertFor", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: [String], default: [] }),
     __metadata("design:type", Array)

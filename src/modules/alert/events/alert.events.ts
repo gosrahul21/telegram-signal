@@ -6,14 +6,13 @@ export interface BaseAlertEvent {
 }
 
 // Alert created event
-export interface AlertCreatedEvent extends BaseAlertEvent {
-  alert: Alert;
+export interface AlertCreatedEvent extends BaseAlertEvent, Alert {
+  // alert: Alert;
 }
 
 // Alert updated event
-export interface AlertUpdatedEvent extends BaseAlertEvent {
-  alert: Alert;
-  previousData?: Partial<Alert>;
+export interface AlertUpdatedEvent extends BaseAlertEvent, Alert {
+
 }
 
 // Alert deleted event

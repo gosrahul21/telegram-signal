@@ -10,10 +10,7 @@ import { Alert, AlertDocument } from './alert.entity';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { UpdateAlertDto } from './dto/update-alert.dto';
 import { QueryAlertDto } from './dto/query-alert.dto';
-import {
-  AlertDeletedEvent,
-  ALERT_EVENTS,
-} from './events/alert.events';
+import { AlertDeletedEvent } from './events/alert.events';
 import { v4 as uuidv4 } from 'uuid';
 import { EventsType } from '@/utils/constants/eventsType';
 
@@ -24,6 +21,10 @@ export class AlertService {
     @InjectModel(Alert.name) private alertModel: Model<AlertDocument>,
     private eventEmitter: EventEmitter2,
   ) {}
+
+  async onModuleInit() {
+    this.alerts = await this.alertModel.find({}).lean();
+  }
 
   getBestCount(
     symbol: string,
@@ -40,7 +41,7 @@ export class AlertService {
     const hasInfinite = filteredAlerts.some((alert) => alert.infinite);
     if (hasInfinite) return 'INFINITE';
 
-    return Math.max(...filteredAlerts.map((alert) => alert.count));
+    return Math.max(...filteredAlerts.map((alert) => alert.count), 0);
   }
 
   async create(createAlertDto: CreateAlertDto): Promise<Alert> {
@@ -55,7 +56,7 @@ export class AlertService {
       const savedAlert = await alert.save();
       this.alerts.push(savedAlert.toObject());
       // Emit alert created event
-      this.emitCustomEvent(ALERT_EVENTS.CREATED, {
+      const alertObject = {
         ...savedAlert.toObject(),
         count: await this.getBestCount(
           savedAlert.symbol,
@@ -63,11 +64,13 @@ export class AlertService {
           savedAlert.eventType,
         ),
         timestamp: new Date(),
-      });
+      };
+      console.log('alertObject', alertObject);
+      this.emitCustomEvent(EventsType.ALERT_CREATED, alertObject);
 
       return savedAlert;
     } catch (error) {
-      throw new BadRequestException('Failed to create alert');
+      throw new BadRequestException(error);
     }
   }
 
@@ -134,15 +137,14 @@ export class AlertService {
   }
 
   async update(id: string, updateAlertDto: UpdateAlertDto): Promise<Alert> {
-
     // Get the previous alert data for comparison
-    const previousAlert = await this.alertModel.findById(id);
+    const previousAlert = await this.alertModel.findOne({ uuid: id });
     if (!previousAlert) {
       throw new NotFoundException('Alert not found');
     }
 
     const updatedAlert = await this.alertModel
-      .findByIdAndUpdate(id, updateAlertDto, {
+      .findOneAndUpdate({ uuid: id }, updateAlertDto, {
         new: true,
         runValidators: true,
       })
@@ -189,63 +191,13 @@ export class AlertService {
     this.emitCustomEvent(EventsType.ALERT_DELETED, {
       alertId: id,
       userId: alert.userId.toString(),
+      symbol: alert.symbol,
+      timeframe: alert.timeframe,
+      eventType: alert.eventType,
       count: this.getBestCount(alert.symbol, alert.timeframe, alert.eventType),
       timestamp: new Date(),
     } as AlertDeletedEvent);
   }
-
-  // async toggleActive(id: string): Promise<Alert> {
-  //   if (!Types.ObjectId.isValid(id)) {
-  //     throw new BadRequestException('Invalid alert ID');
-  //   }
-
-  //   const alert = await this.alertModel.findById(id);
-  //   if (!alert) {
-  //     throw new NotFoundException('Alert not found');
-  //   }
-
-  //   const previousStatus = alert.isActive;
-  //   alert.isActive = !alert.isActive;
-  //   const updatedAlert = await alert.save();
-
-  //   // Emit alert status changed event
-  //   this.eventEmitter.emit(ALERT_EVENTS.STATUS_CHANGED, {
-  //     alert: updatedAlert,
-  //     previousStatus,
-  //     newStatus: updatedAlert.isActive,
-  //     timestamp: new Date(),
-  //   } as AlertStatusChangedEvent);
-
-  //   return updatedAlert;
-  // }
-
-  // async incrementTriggerCount(id: string, triggerData?: any): Promise<Alert> {
-  //   if (!Types.ObjectId.isValid(id)) {
-  //     throw new BadRequestException('Invalid alert ID');
-  //   }
-
-  //   const alert = await this.alertModel.findByIdAndUpdate(
-  //     id,
-  //     {
-  //       $inc: { triggerCount: 1 },
-  //       lastTriggered: new Date(),
-  //     },
-  //     { new: true },
-  //   );
-
-  //   if (!alert) {
-  //     throw new NotFoundException('Alert not found');
-  //   }
-
-  //   // Emit alert triggered event
-  //   this.eventEmitter.emit(ALERT_EVENTS.CREATED, {
-  //     alert,
-  //     triggerData: triggerData || {},
-  //     timestamp: new Date(),
-  //   } as AlertTriggeredEvent);
-
-  //   return alert;
-  // }
 
   async findActiveAlerts(): Promise<Alert[]> {
     return await this.alertModel.find({ isActive: true });

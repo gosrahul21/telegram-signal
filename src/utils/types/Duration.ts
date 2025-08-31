@@ -12,3 +12,4 @@ export enum UpstoxInterval {
     OneDay = 'days/1',
     week = 'week/1'
 }
+

@@ -3,7 +3,7 @@ export declare class CreateAlertDto {
     symbol: string;
     type: MonitorEventType;
     count: number;
-    eternalCount?: boolean;
+    infinite?: boolean;
     timeframe: Timeframe;
     conditions?: Record<string, any>;
     description?: string;

@@ -1,6 +1,6 @@
 export enum EventsType {
   ALERT_TRIGGERED_USER = 'alert.user.triggered',
-  ALERT_TRIGGERED_ORDER = 'alert.system.triggered',
+  ALERT_TRIGGERED_ORDER = 'alert.order.triggered',
   ALERT_CREATED = 'alert.created',
   ALERT_UPDATED = 'alert.updated',
   ALERT_DELETED = 'alert.deleted',

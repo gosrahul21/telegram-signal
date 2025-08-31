@@ -8,16 +8,24 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocketModule = void 0;
 const common_1 = require("@nestjs/common");
+const event_emitter_1 = require("@nestjs/event-emitter");
 const socket_service_1 = require("./socket.service");
 const socket_gateway_1 = require("./socket.gateway");
 const socket_auth_middleware_1 = require("./socket-auth.middleware");
+const socket_listener_service_1 = require("./socket-listener.service");
 let SocketModule = class SocketModule {
 };
 exports.SocketModule = SocketModule;
 exports.SocketModule = SocketModule = __decorate([
     (0, common_1.Module)({
-        providers: [socket_service_1.SocketService, socket_gateway_1.SocketGateway, socket_auth_middleware_1.SocketAuthMiddleware],
-        exports: [socket_service_1.SocketService],
+        imports: [event_emitter_1.EventEmitterModule.forRoot()],
+        providers: [
+            socket_service_1.SocketService,
+            socket_gateway_1.SocketGateway,
+            socket_auth_middleware_1.SocketAuthMiddleware,
+            socket_listener_service_1.SocketListenerService,
+        ],
+        exports: [socket_service_1.SocketService, socket_listener_service_1.SocketListenerService],
     })
 ], SocketModule);
 //# sourceMappingURL=socket.module.js.map

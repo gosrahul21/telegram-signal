@@ -7,4 +7,10 @@ export declare class SocketService {
     registerClient(userId: string, client: Socket): void;
     removeClient(client: Socket): void;
     emitToUser(userId: string, event: string, data: any): boolean;
+    broadcastToAll(event: string, data: any): number;
+    broadcastToUsers(userIds: string[], event: string, data: any): number;
+    getConnectedUserIds(): string[];
+    getConnectionCount(): number;
+    isUserConnected(userId: string): boolean;
+    getClient(userId: string): Socket | undefined;
 }

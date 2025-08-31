@@ -15,10 +15,9 @@ let SocketService = class SocketService {
     sendHeartbeat(client) {
         this.heartbeatInterval = setInterval(() => {
             for (const client of this.clients.values()) {
-                console.log('Sending heartbeat to client', client.id);
                 client.emit('heartbeat', { message: 'Heartbeat' });
             }
-        }, 2000);
+        }, 10000);
     }
     stopHeartbeat() {
         clearInterval(this.heartbeatInterval);
@@ -45,6 +44,40 @@ let SocketService = class SocketService {
             return true;
         }
         return false;
+    }
+    broadcastToAll(event, data) {
+        let sentCount = 0;
+        for (const client of this.clients.values()) {
+            try {
+                client.emit(event, data);
+                sentCount++;
+            }
+            catch (error) {
+                console.error(`Error broadcasting to client ${client.id}:`, error);
+            }
+        }
+        return sentCount;
+    }
+    broadcastToUsers(userIds, event, data) {
+        let sentCount = 0;
+        for (const userId of userIds) {
+            if (this.emitToUser(userId, event, data)) {
+                sentCount++;
+            }
+        }
+        return sentCount;
+    }
+    getConnectedUserIds() {
+        return Array.from(this.clients.keys());
+    }
+    getConnectionCount() {
+        return this.clients.size;
+    }
+    isUserConnected(userId) {
+        return this.clients.has(userId);
+    }
+    getClient(userId) {
+        return this.clients.get(userId);
     }
 };
 exports.SocketService = SocketService;

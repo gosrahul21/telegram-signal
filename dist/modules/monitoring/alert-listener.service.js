@@ -14,62 +14,74 @@ exports.AlertListenerService = void 0;
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const monitoring_service_1 = require("./monitoring.service");
+const eventsType_1 = require("../../utils/constants/eventsType");
 let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
     constructor(monitoringService) {
         this.monitoringService = monitoringService;
         this.logger = new common_1.Logger(AlertListenerService_1.name);
     }
     async handleAlertCreated(event) {
-        this.logger.log(`New alert created: ${event.alert.symbol} - ${event.alert.eventType} - ${event.alert.timeframe}`);
+        const alert = event;
+        this.logger.log(`New monitoring created: ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`);
+        if (!alert.isActive)
+            return;
+        await this.monitoringService.addMonitoring({
+            symbol: alert.symbol,
+            timeframe: alert.timeframe,
+            eventType: alert.eventType,
+            count: alert.count.toString(),
+        });
     }
     async handleAlertUpdated(event) {
-        this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.eventType} - ${event.alert.timeframe}`);
-        if (event.previousData) {
-            await this.monitoringService.removeAlertFromMonitoring(event.previousData.uuid);
+        const alert = event;
+        this.logger.log(`Alert updated: ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`);
+        if (alert.count === 0 && alert.count !== 'INFINITE') {
+            await this.monitoringService.removeMonitoring(alert.symbol, alert.timeframe, alert.eventType);
+            return;
         }
-        if (event.alert.isActive) {
-            await this.monitoringService.addAlertToMonitoring(event.alert);
-        }
+        await this.monitoringService.addMonitoring({
+            symbol: alert.symbol,
+            timeframe: alert.timeframe,
+            eventType: alert.eventType,
+            count: alert.count.toString(),
+        });
     }
-    async handleAlertDeleted(event) {
-        this.logger.log(`Alert deleted: ${event.alertId}`);
-        await this.monitoringService.removeAlertFromMonitoring(event.alertId);
-    }
-    async handleAlertStatusChanged(event) {
-        this.logger.log(`Alert status changed: ${event.alert.symbol} - ${event.previousStatus} -> ${event.newStatus}`);
-        if (event.newStatus) {
-            await this.monitoringService.addAlertToMonitoring(event.alert);
+    async handleAlertDeleted(alert) {
+        try {
+            if (alert.count === 0 && alert.count !== 'INFINITE') {
+                return await this.monitoringService.removeMonitoring(alert.symbol, alert.timeframe, alert.eventType);
+            }
+            await this.monitoringService.addMonitoring({
+                symbol: alert.symbol,
+                timeframe: alert.timeframe,
+                eventType: alert.eventType,
+                count: alert.count.toString(),
+            });
         }
-        else {
-            await this.monitoringService.removeAlertFromMonitoring(event.alert.uuid);
+        catch (error) {
+            this.logger.error(`Error removing monitoring: ${error}`);
         }
     }
 };
 exports.AlertListenerService = AlertListenerService;
 __decorate([
-    (0, event_emitter_1.OnEvent)('alert.created'),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ALERT_CREATED),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AlertListenerService.prototype, "handleAlertCreated", null);
 __decorate([
-    (0, event_emitter_1.OnEvent)('alert.updated'),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ALERT_UPDATED),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AlertListenerService.prototype, "handleAlertUpdated", null);
 __decorate([
-    (0, event_emitter_1.OnEvent)('alert.deleted'),
+    (0, event_emitter_1.OnEvent)(eventsType_1.EventsType.ALERT_DELETED),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AlertListenerService.prototype, "handleAlertDeleted", null);
-__decorate([
-    (0, event_emitter_1.OnEvent)('alert.status.changed'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], AlertListenerService.prototype, "handleAlertStatusChanged", null);
 exports.AlertListenerService = AlertListenerService = AlertListenerService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [monitoring_service_1.MonitoringService])

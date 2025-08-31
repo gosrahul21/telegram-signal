@@ -17,35 +17,6 @@ export class AlertListenerService {
   constructor(private readonly alertService: AlertService) {}
 
 
-  @OnEvent(ALERT_EVENTS.UPDATED)
-  handleAlertUpdated(event: AlertUpdatedEvent) {
-    this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.eventType}`);
-    
-    // Example: Check if critical fields changed
-    if (event.previousData) {
-      this.checkForCriticalChanges(event.previousData, event.alert);
-    }
-    
-    // Example: Update monitoring configuration
-    this.updateMonitoringConfiguration(event.alert);
-    
-    // Example: Log to external service
-    this.logToExternalService('alert_updated', event);
-  }
-
-  @OnEvent(ALERT_EVENTS.DELETED)
-  handleAlertDeleted(event: AlertDeletedEvent) {
-    this.logger.log(`Alert deleted: ${event.alertId}`);
-    
-    // Example: Stop monitoring for this alert
-    this.stopMonitoringAlert(event.alertId);
-    
-    // Example: Clean up related resources
-    this.cleanupAlertResources(event.alertId);
-    
-    // Example: Log to external service
-    this.logToExternalService('alert_deleted', event);
-  }
 
   @OnEvent(ALERT_EVENTS.TRIGGERED)
   handleAlertTriggered(event: AlertTriggeredEvent) {

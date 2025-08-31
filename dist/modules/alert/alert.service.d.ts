@@ -7,15 +7,16 @@ import { QueryAlertDto } from './dto/query-alert.dto';
 export declare class AlertService {
     private alertModel;
     private eventEmitter;
+    private alerts;
     constructor(alertModel: Model<AlertDocument>, eventEmitter: EventEmitter2);
+    onModuleInit(): Promise<void>;
+    getBestCount(symbol: string, timeframe: string, eventType: string): 'INFINITE' | number;
     create(createAlertDto: CreateAlertDto): Promise<Alert>;
     findAll(query: QueryAlertDto): Promise<Alert[]>;
     findOne(id: string): Promise<Alert>;
     findByUserId(userId: string): Promise<Alert[]>;
     update(id: string, updateAlertDto: UpdateAlertDto): Promise<Alert>;
     remove(id: string): Promise<void>;
-    toggleActive(id: string): Promise<Alert>;
-    incrementTriggerCount(id: string, triggerData?: any): Promise<Alert>;
     findActiveAlerts(): Promise<Alert[]>;
     findAlertsBySymbol(symbol: string): Promise<Alert[]>;
     emitCustomEvent(eventName: string, eventData: any): Promise<void>;

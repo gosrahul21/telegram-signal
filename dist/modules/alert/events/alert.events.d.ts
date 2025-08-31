@@ -1,17 +1,18 @@
-import { Alert } from '../alert.entity';
+import { Alert, MonitorEventType } from '../alert.entity';
 export interface BaseAlertEvent {
     timestamp: Date;
 }
-export interface AlertCreatedEvent extends BaseAlertEvent {
-    alert: Alert;
+export interface AlertCreatedEvent extends BaseAlertEvent, Alert {
 }
-export interface AlertUpdatedEvent extends BaseAlertEvent {
-    alert: Alert;
-    previousData?: Partial<Alert>;
+export interface AlertUpdatedEvent extends BaseAlertEvent, Alert {
 }
 export interface AlertDeletedEvent extends BaseAlertEvent {
     alertId: string;
     userId: string;
+    symbol: string;
+    timeframe: string;
+    eventType: MonitorEventType;
+    count: number | string;
 }
 export interface AlertTriggeredEvent extends BaseAlertEvent {
     alert: Alert;

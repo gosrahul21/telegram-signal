@@ -15,10 +15,11 @@ const bollinger_bands_service_1 = require("./bollinger-bands.service");
 const macd_service_1 = require("./macd.service");
 const rsi_service_1 = require("./rsi.service");
 const ema_service_1 = require("./ema.service");
-const notification_service_1 = require("./notification.service");
 const alert_module_1 = require("../alert/alert.module");
 const alert_listener_service_1 = require("./alert-listener.service");
 const binance_price_api_service_1 = require("../../services/binance-price-api.service");
+const monitoring_entity_1 = require("./monitoring.entity");
+const mongoose_1 = require("@nestjs/mongoose");
 let MonitoringModule = class MonitoringModule {
 };
 exports.MonitoringModule = MonitoringModule;
@@ -26,6 +27,9 @@ exports.MonitoringModule = MonitoringModule = __decorate([
     (0, common_1.Module)({
         imports: [
             alert_module_1.AlertModule,
+            mongoose_1.MongooseModule.forFeature([
+                { name: monitoring_entity_1.Monitoring.name, schema: monitoring_entity_1.MonitoringSchema },
+            ]),
         ],
         providers: [
             monitoring_service_1.MonitoringService,
@@ -35,15 +39,13 @@ exports.MonitoringModule = MonitoringModule = __decorate([
             macd_service_1.MACDService,
             rsi_service_1.RSIService,
             ema_service_1.EMAService,
-            notification_service_1.NotificationService,
             alert_listener_service_1.AlertListenerService,
-            binance_price_api_service_1.BinancePriceApiService
+            binance_price_api_service_1.BinancePriceApiService,
         ],
         exports: [
             monitoring_service_1.MonitoringService,
             technical_analysis_service_1.TechnicalAnalysisService,
             price_monitoring_service_1.PriceMonitoringService,
-            notification_service_1.NotificationService,
         ],
     })
 ], MonitoringModule);

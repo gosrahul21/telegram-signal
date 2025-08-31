@@ -1,3 +1,4 @@
+import { AlertFor } from '@/utils/types/AlertFor';
 import { Document, Types } from 'mongoose';
 export type AlertDocument = Alert & Document;
 export declare enum MonitorEventType {
@@ -28,11 +29,12 @@ export declare class Alert {
     uuid: string;
     timeframe: Timeframe;
     isActive: boolean;
-    eternal: boolean;
+    infinite: boolean;
     conditions: Record<string, any>;
     lastTriggered?: Date;
     triggerCount: number;
     description?: string;
+    alertFor: AlertFor;
     tags: string[];
     metadata?: Record<string, any>;
 }

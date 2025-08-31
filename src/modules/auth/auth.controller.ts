@@ -30,7 +30,6 @@ import { CompleteRegistrationDto } from './dto/complete-registration.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { LinkTelegramDto } from '../user/dto/link-telegram.dto';
-import { GenerateRegistrationTokenDto } from './dto/generate-registration-token.dto';
 import { Request as ExpressRequest } from 'express';
 
 @ApiTags('auth')

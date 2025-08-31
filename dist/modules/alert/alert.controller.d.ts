@@ -12,7 +12,5 @@ export declare class AlertController {
     findByUserId(userId: string): Promise<import("./alert.entity").Alert[]>;
     findOne(id: string): Promise<import("./alert.entity").Alert>;
     update(id: string, updateAlertDto: UpdateAlertDto): Promise<import("./alert.entity").Alert>;
-    toggleActive(id: string): Promise<import("./alert.entity").Alert>;
-    incrementTriggerCount(id: string): Promise<import("./alert.entity").Alert>;
     remove(id: string): Promise<void>;
 }

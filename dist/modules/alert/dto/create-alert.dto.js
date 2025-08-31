@@ -25,15 +25,14 @@ __decorate([
 ], CreateAlertDto.prototype, "type", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(10),
+    (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateAlertDto.prototype, "count", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
-], CreateAlertDto.prototype, "eternalCount", void 0);
+], CreateAlertDto.prototype, "infinite", void 0);
 __decorate([
     (0, class_validator_1.IsEnum)(alert_entity_1.Timeframe),
     __metadata("design:type", String)

@@ -25,6 +25,7 @@ export class AlertController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(JwtAuthGuard)
   create(@Body() createAlertDto: CreateAlertDto) {
+    console.log('createAlertDto', createAlertDto);
     return this.alertService.create(createAlertDto);
   }
 
@@ -56,16 +57,6 @@ export class AlertController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAlertDto: UpdateAlertDto) {
     return this.alertService.update(id, updateAlertDto);
-  }
-
-  @Patch(':id/toggle')
-  toggleActive(@Param('id') id: string) {
-    return this.alertService.toggleActive(id);
-  }
-
-  @Patch(':id/increment-trigger')
-  incrementTriggerCount(@Param('id') id: string) {
-    return this.alertService.incrementTriggerCount(id);
   }
 
   @Delete(':id')

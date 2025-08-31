@@ -8,6 +8,7 @@ import {
 import { MonitoringService } from './monitoring.service';
 import { EventsType } from '@/utils/constants/eventsType';
 import { MonitorEventType } from '../alert';
+import { CreateMonitoringDto } from './dto/create-monitoring.dto';
 
 @Injectable()
 export class AlertListenerService {
@@ -18,23 +19,26 @@ export class AlertListenerService {
   /** Handle new alert */
   @OnEvent(EventsType.ALERT_CREATED)
   async handleAlertCreated(event: AlertCreatedEvent) {
-    const { alert } = event;
+    const alert = event;
     this.logger.log(
-      `New alert created: ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`,
+      `New monitoring created: ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`,
     );
 
     // Skip if inactive as it would not affect the current monitoring
     if (!alert.isActive) return;
 
     await this.monitoringService.addMonitoring({
-      ...alert,
-    } as any);
+      symbol: alert.symbol,
+      timeframe: alert.timeframe,
+      eventType: alert.eventType,
+      count: alert.count.toString(),
+    } as CreateMonitoringDto);
   }
 
   /** Handle alert update */
   @OnEvent(EventsType.ALERT_UPDATED)
   async handleAlertUpdated(event: AlertUpdatedEvent) {
-    const { alert, previousData } = event;
+    const alert = event;
 
     this.logger.log(
       `Alert updated: ${alert.symbol} - ${alert.eventType} - ${alert.timeframe}`,
@@ -52,7 +56,10 @@ export class AlertListenerService {
     }
 
     await this.monitoringService.addMonitoring({
-      ...alert,
+      symbol: alert.symbol,
+      timeframe: alert.timeframe,
+      eventType: alert.eventType,
+      count: alert.count.toString(),
     } as any);
   }
 
@@ -61,12 +68,19 @@ export class AlertListenerService {
     try {
       // if count is 0 then remove monitoring
       if (alert.count === 0 && (alert.count as any) !== 'INFINITE') {
-        await this.monitoringService.removeMonitoring(
+        return await this.monitoringService.removeMonitoring(
           alert.symbol,
           alert.timeframe,
           alert.eventType as MonitorEventType,
         );
       }
+
+      await this.monitoringService.addMonitoring({
+        symbol: alert.symbol,
+        timeframe: alert.timeframe,
+        eventType: alert.eventType,
+        count: alert.count.toString(),
+      } as any);
     } catch (error) {
       this.logger.error(`Error removing monitoring: ${error}`);
     }

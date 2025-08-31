@@ -20,20 +20,6 @@ let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
         this.alertService = alertService;
         this.logger = new common_1.Logger(AlertListenerService_1.name);
     }
-    handleAlertUpdated(event) {
-        this.logger.log(`Alert updated: ${event.alert.symbol} - ${event.alert.eventType}`);
-        if (event.previousData) {
-            this.checkForCriticalChanges(event.previousData, event.alert);
-        }
-        this.updateMonitoringConfiguration(event.alert);
-        this.logToExternalService('alert_updated', event);
-    }
-    handleAlertDeleted(event) {
-        this.logger.log(`Alert deleted: ${event.alertId}`);
-        this.stopMonitoringAlert(event.alertId);
-        this.cleanupAlertResources(event.alertId);
-        this.logToExternalService('alert_deleted', event);
-    }
     handleAlertTriggered(event) {
         this.logger.log(`Alert triggered: ${event.alert.symbol} - ${event.alert.eventType}`);
         this.sendAlertNotification(event.alert, event.triggerData);
@@ -91,18 +77,6 @@ let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
     }
 };
 exports.AlertListenerService = AlertListenerService;
-__decorate([
-    (0, event_emitter_1.OnEvent)(alert_events_1.ALERT_EVENTS.UPDATED),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
-], AlertListenerService.prototype, "handleAlertUpdated", null);
-__decorate([
-    (0, event_emitter_1.OnEvent)(alert_events_1.ALERT_EVENTS.DELETED),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
-], AlertListenerService.prototype, "handleAlertDeleted", null);
 __decorate([
     (0, event_emitter_1.OnEvent)(alert_events_1.ALERT_EVENTS.TRIGGERED),
     __metadata("design:type", Function),

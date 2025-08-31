@@ -18,19 +18,26 @@ const mongoose_1 = require("@nestjs/mongoose");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const mongoose_2 = require("mongoose");
 const alert_entity_1 = require("./alert.entity");
-const alert_events_1 = require("./events/alert.events");
 const uuid_1 = require("uuid");
+const eventsType_1 = require("../../utils/constants/eventsType");
 let AlertService = class AlertService {
     constructor(alertModel, eventEmitter) {
         this.alertModel = alertModel;
         this.eventEmitter = eventEmitter;
-        setInterval(() => {
-            this.eventEmitter.emit(alert_events_1.ALERT_EVENTS.CREATED, {
-                alert: {
-                    uuid: (0, uuid_1.v4)(),
-                },
-            });
-        }, 1000);
+        this.alerts = [];
+    }
+    async onModuleInit() {
+        this.alerts = await this.alertModel.find({}).lean();
+    }
+    getBestCount(symbol, timeframe, eventType) {
+        const filteredAlerts = this.alerts.filter((alert) => alert.isActive &&
+            alert.symbol === symbol &&
+            alert.timeframe === timeframe &&
+            alert.eventType === eventType);
+        const hasInfinite = filteredAlerts.some((alert) => alert.infinite);
+        if (hasInfinite)
+            return 'INFINITE';
+        return Math.max(...filteredAlerts.map((alert) => alert.count), 0);
     }
     async create(createAlertDto) {
         try {
@@ -39,16 +46,20 @@ let AlertService = class AlertService {
                 ...createAlertDto,
                 userId: new mongoose_2.Types.ObjectId(createAlertDto.userId),
             };
-            this.eventEmitter.emit(alert_events_1.ALERT_EVENTS.CREATED, {
-                alert: alertData,
-                timestamp: new Date(),
-            });
             const alert = new this.alertModel(alertData);
             const savedAlert = await alert.save();
+            this.alerts.push(savedAlert.toObject());
+            const alertObject = {
+                ...savedAlert.toObject(),
+                count: await this.getBestCount(savedAlert.symbol, savedAlert.timeframe, savedAlert.eventType),
+                timestamp: new Date(),
+            };
+            console.log('alertObject', alertObject);
+            this.emitCustomEvent(eventsType_1.EventsType.ALERT_CREATED, alertObject);
             return savedAlert;
         }
         catch (error) {
-            throw new common_1.BadRequestException('Failed to create alert');
+            throw new common_1.BadRequestException(error);
         }
     }
     async findAll(query) {
@@ -100,81 +111,46 @@ let AlertService = class AlertService {
             .sort({ createdAt: -1 });
     }
     async update(id, updateAlertDto) {
-        if (!mongoose_2.Types.ObjectId.isValid(id)) {
-            throw new common_1.BadRequestException('Invalid alert ID');
-        }
-        const previousAlert = await this.alertModel.findById(id);
+        const previousAlert = await this.alertModel.findOne({ uuid: id });
         if (!previousAlert) {
             throw new common_1.NotFoundException('Alert not found');
         }
-        const alert = await this.alertModel.findByIdAndUpdate(id, updateAlertDto, {
+        const updatedAlert = await this.alertModel
+            .findOneAndUpdate({ uuid: id }, updateAlertDto, {
             new: true,
             runValidators: true,
-        });
-        if (!alert) {
+        })
+            .lean();
+        if (!updatedAlert) {
             throw new common_1.NotFoundException('Alert not found');
         }
-        this.eventEmitter.emit(alert_events_1.ALERT_EVENTS.UPDATED, {
-            alert,
-            previousData: previousAlert,
-            timestamp: new Date(),
-        });
-        return alert;
-    }
-    async remove(id) {
-        if (!mongoose_2.Types.ObjectId.isValid(id)) {
-            throw new common_1.BadRequestException('Invalid alert ID');
-        }
-        const alert = await this.alertModel.findById(id);
-        if (!alert) {
-            throw new common_1.NotFoundException('Alert not found');
-        }
-        const result = await this.alertModel.findByIdAndDelete(id);
-        if (!result) {
-            throw new common_1.NotFoundException('Alert not found');
-        }
-        this.eventEmitter.emit(alert_events_1.ALERT_EVENTS.DELETED, {
-            alertId: id,
-            userId: alert.userId.toString(),
-            timestamp: new Date(),
-        });
-    }
-    async toggleActive(id) {
-        if (!mongoose_2.Types.ObjectId.isValid(id)) {
-            throw new common_1.BadRequestException('Invalid alert ID');
-        }
-        const alert = await this.alertModel.findById(id);
-        if (!alert) {
-            throw new common_1.NotFoundException('Alert not found');
-        }
-        const previousStatus = alert.isActive;
-        alert.isActive = !alert.isActive;
-        const updatedAlert = await alert.save();
-        this.eventEmitter.emit(alert_events_1.ALERT_EVENTS.STATUS_CHANGED, {
-            alert: updatedAlert,
-            previousStatus,
-            newStatus: updatedAlert.isActive,
+        this.alerts = this.alerts.map((alert) => alert.uuid === id ? updatedAlert : alert);
+        this.emitCustomEvent(eventsType_1.EventsType.ALERT_UPDATED, {
+            ...updatedAlert,
+            count: this.getBestCount(updatedAlert.symbol, updatedAlert.timeframe, updatedAlert.eventType),
             timestamp: new Date(),
         });
         return updatedAlert;
     }
-    async incrementTriggerCount(id, triggerData) {
-        if (!mongoose_2.Types.ObjectId.isValid(id)) {
-            throw new common_1.BadRequestException('Invalid alert ID');
-        }
-        const alert = await this.alertModel.findByIdAndUpdate(id, {
-            $inc: { triggerCount: 1 },
-            lastTriggered: new Date(),
-        }, { new: true });
+    async remove(id) {
+        const alert = await this.alertModel.findOne({ uuid: id });
         if (!alert) {
             throw new common_1.NotFoundException('Alert not found');
         }
-        this.eventEmitter.emit(alert_events_1.ALERT_EVENTS.CREATED, {
-            alert,
-            triggerData: triggerData || {},
+        const result = await this.alertModel.findOneAndDelete({ uuid: id });
+        if (!result) {
+            throw new common_1.NotFoundException('Alert not found');
+        }
+        this.alerts = this.alerts.filter((alert) => alert.uuid !== id);
+        this.emitCustomEvent(eventsType_1.EventsType.ALERT_DELETED, {
+            alertId: id,
+            userId: alert.userId.toString(),
+            symbol: alert.symbol,
+            timeframe: alert.timeframe,
+            eventType: alert.eventType,
+            count: this.getBestCount(alert.symbol, alert.timeframe, alert.eventType),
             timestamp: new Date(),
         });
-        return alert;
     }
     async findActiveAlerts() {
         return await this.alertModel.find({ isActive: true });

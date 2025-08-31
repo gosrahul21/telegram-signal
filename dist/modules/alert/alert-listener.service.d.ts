@@ -1,11 +1,9 @@
 import { AlertService } from './alert.service';
-import { AlertUpdatedEvent, AlertDeletedEvent, AlertTriggeredEvent, AlertStatusChangedEvent } from './events/alert.events';
+import { AlertTriggeredEvent, AlertStatusChangedEvent } from './events/alert.events';
 export declare class AlertListenerService {
     private readonly alertService;
     private readonly logger;
     constructor(alertService: AlertService);
-    handleAlertUpdated(event: AlertUpdatedEvent): void;
-    handleAlertDeleted(event: AlertDeletedEvent): void;
     handleAlertTriggered(event: AlertTriggeredEvent): void;
     handleAlertStatusChanged(event: AlertStatusChangedEvent): void;
     private notifyUserAboutNewAlert;
