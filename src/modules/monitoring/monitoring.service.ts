@@ -16,7 +16,7 @@ import { EventsType } from '@/utils/constants/eventsType';
 @Injectable()
 export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MonitoringService.name);
-  private readonly monitorings: Monitoring[] = [];
+  private monitorings: Monitoring[] = [];
 
   constructor(
     private readonly technicalAnalysisService: TechnicalAnalysisService,
@@ -28,6 +28,19 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this.logger.log('Monitoring service initialized');
+  }
+
+  async loadMonitorings() {
+    try {
+      this.monitorings = await this.monitoringModel.find().lean();
+      this.monitorings.forEach((monitoring) => {
+        monitoring.monitoringInterval = this.startMonitoringByType(
+          monitoring as Monitoring,
+        );
+      });
+    } catch (error) {
+      this.logger.error('Error loading monitorings:', error);
+    }
   }
 
   onModuleDestroy() {
@@ -64,8 +77,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
       );
     } else {
       this.monitorings.push(monitoring);
-      monitoring.monitoringInterval =
-        await this.startMonitoringByType(monitoring);
+      monitoring.monitoringInterval = this.startMonitoringByType(monitoring);
 
       this.logger.log(
         `Started monitoring for ${monitoring.symbol} - ${monitoring.eventType} - ${monitoring.timeframe}`,
@@ -105,9 +117,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Core monitoring by type */
-  private async startMonitoringByType(
-    monitoring: Monitoring,
-  ): Promise<NodeJS.Timeout> {
+  private startMonitoringByType(monitoring: Monitoring): NodeJS.Timeout {
     const { symbol, timeframe, eventType } = monitoring;
 
     const interval = setInterval(async () => {
@@ -187,7 +197,6 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   /** Trigger alert */
   private async triggerAlert(monitoring: Monitoring, triggerData: any) {
     try {
-
       this.eventEmitter.emit(EventsType.MONITORING_TRIGGERED, {
         monitoring,
         triggerData,
@@ -202,7 +211,8 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
         monitoring.count = (monitoring.count as number) - 1;
 
         await this.monitoringModel.updateOne(
-          { symbol: monitoring.symbol,
+          {
+            symbol: monitoring.symbol,
             timeframe: monitoring.timeframe,
             eventType: monitoring.eventType,
           },
