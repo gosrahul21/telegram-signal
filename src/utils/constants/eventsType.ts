@@ -1,5 +1,5 @@
 export enum EventsType {
-  // EMITTED BY ALERT SERVICE one for notification and one for order  
+  // EMITTED BY ALERT SERVICE one for notification and one for order
   ALERT_TRIGGERED_USER = 'alert.user.triggered',
   ALERT_TRIGGERED_ORDER = 'alert.order.triggered',
 
@@ -12,7 +12,10 @@ export enum EventsType {
   ORDER_CREATED = 'order.created',
   ORDER_UPDATED = 'order.updated',
   ORDER_CANCELLED = 'order.cancelled',
+  ORDER_CANCELED = 'order.canceled',
   ORDER_FILLED = 'order.filled',
+  ORDER_EXECUTED = 'order.executed',
+  BULK_ORDERS_CREATED = 'bulk.orders.created',
 
   // EMITTED BY NOTIFICATION SERVICE
   NOTIFICATION_CREATED = 'notification.created',

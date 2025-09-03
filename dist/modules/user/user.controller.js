@@ -37,6 +37,9 @@ let UserController = class UserController {
     update(id, updateData) {
         return this.userService.update(id, updateData);
     }
+    updateTelegramData(id, updateData) {
+        return this.userService.linkTelegramAccount(id, updateData.telegramId, updateData.chatId);
+    }
     remove(id) {
         return this.userService.remove(id);
     }
@@ -256,6 +259,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], UserController.prototype, "update", null);
+__decorate([
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], UserController.prototype, "updateTelegramData", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),

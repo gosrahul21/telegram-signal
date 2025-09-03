@@ -22,7 +22,7 @@ export class SocketService {
 
   registerClient(userId: string, client: Socket) {
     this.clients.set(userId, client);
-    this.sendHeartbeat(client);
+    // this.sendHeartbeat(client);
   }
 
   removeClient(client: Socket) {

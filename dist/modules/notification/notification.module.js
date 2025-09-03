@@ -11,8 +11,9 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const notification_controller_1 = require("./notification.controller");
 const notification_entity_1 = require("./notification.entity");
-const bot_module_1 = require("../../bot/bot.module");
+const bot_module_1 = require("../bot/bot.module");
 const notification_service_1 = require("./notification.service");
+const socket_module_1 = require("../socket/socket.module");
 let NotificationModule = class NotificationModule {
 };
 exports.NotificationModule = NotificationModule;
@@ -20,17 +21,14 @@ exports.NotificationModule = NotificationModule = __decorate([
     (0, common_1.Module)({
         imports: [
             bot_module_1.BotModule,
+            socket_module_1.SocketModule,
             mongoose_1.MongooseModule.forFeature([
                 { name: notification_entity_1.Notification.name, schema: notification_entity_1.NotificationSchema },
             ]),
         ],
         controllers: [notification_controller_1.NotificationController],
-        providers: [
-            notification_service_1.NotificationService
-        ],
-        exports: [
-            notification_service_1.NotificationService
-        ],
+        providers: [notification_service_1.NotificationService],
+        exports: [notification_service_1.NotificationService],
     })
 ], NotificationModule);
 //# sourceMappingURL=notification.module.js.map

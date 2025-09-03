@@ -76,4 +76,6 @@ export declare class SocketGateway implements OnGatewayConnection, OnGatewayDisc
         error?: undefined;
     }>;
     afterInit(server: Server): void;
+    sendToUser(userId: string, event: string, data: any): boolean;
+    broadcastToAll(event: string, data: any): boolean;
 }

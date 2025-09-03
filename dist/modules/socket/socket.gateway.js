@@ -24,14 +24,23 @@ let SocketGateway = class SocketGateway {
         this.socketAuthMiddleware = socketAuthMiddleware;
     }
     handleConnection(client) {
-        const userId = client.data.user.sub;
-        console.log('handleConnection', client.data.user);
+        console.log('handleConnection - Client connected:', client.id);
+        console.log('handleConnection - Client data:', client.data);
+        const userId = client.data?.user?.sub;
+        console.log('handleConnection - User ID:', userId);
         if (userId) {
             this.socketService.registerClient(userId, client);
             console.log(`✅ User ${userId} connected`);
             client.emit('connected', {
                 message: 'Successfully connected to monitoring service',
                 userId,
+                timestamp: new Date(),
+            });
+        }
+        else {
+            console.error('❌ No user ID found in client data');
+            client.emit('error', {
+                message: 'Authentication failed - no user ID found',
                 timestamp: new Date(),
             });
         }
@@ -159,6 +168,24 @@ let SocketGateway = class SocketGateway {
     afterInit(server) {
         server.use(this.socketAuthMiddleware.use.bind(this.socketAuthMiddleware));
     }
+    sendToUser(userId, event, data) {
+        console.log(`Sending ${event} to user ${userId}:`, data);
+        const userSockets = Array.from(this.server.sockets.sockets.values()).filter((socket) => socket.data?.user?.sub === userId);
+        if (userSockets.length === 0) {
+            console.log(`No active sockets found for user ${userId}`);
+            return false;
+        }
+        userSockets.forEach((socket) => {
+            socket.emit(event, data);
+        });
+        console.log(`Message sent to ${userSockets.length} socket(s) for user ${userId}`);
+        return true;
+    }
+    broadcastToAll(event, data) {
+        console.log(`Broadcasting ${event} to all users:`, data);
+        this.server.emit(event, data);
+        return true;
+    }
 };
 exports.SocketGateway = SocketGateway;
 __decorate([
@@ -211,7 +238,13 @@ __decorate([
 ], SocketGateway.prototype, "handleHeartbeat", null);
 exports.SocketGateway = SocketGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
-        cors: { origin: '*' },
+        cors: {
+            origin: '*',
+            methods: ['GET', 'POST'],
+            credentials: true,
+        },
+        namespace: '/',
+        transports: ['websocket', 'polling'],
     }),
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [socket_service_1.SocketService,

@@ -14,7 +14,13 @@ import { SocketService } from './socket.service';
 import { SocketAuthMiddleware } from './socket-auth.middleware';
 
 @WebSocketGateway({
-  cors: { origin: '*' }, // Adjust CORS for production
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  namespace: '/',
+  transports: ['websocket', 'polling'],
 })
 @Injectable()
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -27,8 +33,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   handleConnection(client: Socket & { user: any }) {
-    const userId = client.data.user.sub;
-    console.log('handleConnection', client.data.user);
+    console.log('handleConnection - Client connected:', client.id);
+    console.log('handleConnection - Client data:', client.data);
+
+    const userId = client.data?.user?.sub;
+    console.log('handleConnection - User ID:', userId);
+
     if (userId) {
       this.socketService.registerClient(userId, client);
       console.log(`✅ User ${userId} connected`);
@@ -37,6 +47,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('connected', {
         message: 'Successfully connected to monitoring service',
         userId,
+        timestamp: new Date(),
+      });
+    } else {
+      console.error('❌ No user ID found in client data');
+      client.emit('error', {
+        message: 'Authentication failed - no user ID found',
         timestamp: new Date(),
       });
     }
@@ -196,5 +212,37 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   afterInit(server: Server) {
     server.use(this.socketAuthMiddleware.use.bind(this.socketAuthMiddleware));
+  }
+
+  // Method to send message to specific user
+  sendToUser(userId: string, event: string, data: any) {
+    console.log(`Sending ${event} to user ${userId}:`, data);
+
+    // Find all sockets for this user
+    const userSockets = Array.from(this.server.sockets.sockets.values()).filter(
+      (socket: any) => socket.data?.user?.sub === userId,
+    );
+
+    if (userSockets.length === 0) {
+      console.log(`No active sockets found for user ${userId}`);
+      return false;
+    }
+
+    // Send to all sockets of this user
+    userSockets.forEach((socket: any) => {
+      socket.emit(event, data);
+    });
+
+    console.log(
+      `Message sent to ${userSockets.length} socket(s) for user ${userId}`,
+    );
+    return true;
+  }
+
+  // Method to broadcast to all connected users
+  broadcastToAll(event: string, data: any) {
+    console.log(`Broadcasting ${event} to all users:`, data);
+    this.server.emit(event, data);
+    return true;
   }
 }

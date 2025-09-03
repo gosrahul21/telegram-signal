@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  Request,
 } from '@nestjs/common';
 import { AlertService } from './alert.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
@@ -24,9 +25,9 @@ export class AlertController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(JwtAuthGuard)
-  create(@Body() createAlertDto: CreateAlertDto) {
-    console.log('createAlertDto', createAlertDto);
-    return this.alertService.create(createAlertDto);
+  create(@Body() createAlertDto: CreateAlertDto, @Request() req) {
+    const userId = req.user.id;
+    return this.alertService.create({ ...createAlertDto, userId });
   }
 
   @Get()
@@ -44,8 +45,10 @@ export class AlertController {
     return this.alertService.findAlertsBySymbol(symbol);
   }
 
-  @Get('user/:userId')
-  findByUserId(@Param('userId') userId: string) {
+  @Get('user')
+  @UseGuards(JwtAuthGuard)
+  findByUserId(@Request() req) {
+    const userId = req.user.id;
     return this.alertService.findByUserId(userId);
   }
 
@@ -55,8 +58,10 @@ export class AlertController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAlertDto: UpdateAlertDto) {
-    return this.alertService.update(id, updateAlertDto);
+  @UseGuards(JwtAuthGuard)
+  update(@Param('id') id: string, @Body() updateAlertDto: UpdateAlertDto, @Request() req) {
+    const userId = req.user.id;
+    return this.alertService.update(id, { ...updateAlertDto, userId });
   }
 
   @Delete(':id')

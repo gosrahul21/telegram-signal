@@ -13,6 +13,6 @@ import { SocketListenerService } from './socket-listener.service';
     SocketAuthMiddleware,
     SocketListenerService,
   ],
-  exports: [SocketService, SocketListenerService],
+  exports: [SocketService, SocketListenerService, SocketGateway],
 })
 export class SocketModule {}

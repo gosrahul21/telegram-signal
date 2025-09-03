@@ -24,7 +24,6 @@ let SocketService = class SocketService {
     }
     registerClient(userId, client) {
         this.clients.set(userId, client);
-        this.sendHeartbeat(client);
     }
     removeClient(client) {
         for (const [userId, sock] of this.clients.entries()) {

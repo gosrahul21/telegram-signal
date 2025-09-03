@@ -236,6 +236,11 @@ export class UserController {
     return this.userService.update(id, updateData);
   }
 
+
+  updateTelegramData(@Param('id') id: string, @Body() updateData: any) {
+    return this.userService.linkTelegramAccount(id, updateData.telegramId, updateData.chatId);
+  }
+
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

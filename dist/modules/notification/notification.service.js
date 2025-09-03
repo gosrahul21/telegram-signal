@@ -33,11 +33,11 @@ let NotificationService = NotificationService_1 = class NotificationService {
         });
         const savedNotification = await notification.save();
         this.logger.log(`Notification created for user ${savedNotification.userId}`);
-        this.eventEmitter.emit(eventsType_1.EventsType.NOTIFICATION_CREATED, {
-            ...savedNotification.toObject(),
-            timestamp: new Date(),
-        });
+        this.emitNotification({ ...savedNotification.toObject() });
         return savedNotification;
+    }
+    emitNotification(payload) {
+        this.eventEmitter.emit(eventsType_1.EventsType.NOTIFICATION_CREATED, payload);
     }
     async handleUserAlert(payload) {
         this.logger.log(`Creating USER notification: ${JSON.stringify(payload)}`);
@@ -68,6 +68,182 @@ let NotificationService = NotificationService_1 = class NotificationService {
             eventType: payload.eventType,
             alertId: payload.alertId,
         });
+    }
+    async updateNotification(id, data) {
+        return await this.notificationModel
+            .findByIdAndUpdate(id, data, { new: true })
+            .lean();
+    }
+    async getUserNotifications(userId, options = {}) {
+        const { page = 1, limit = 20, status, type, symbol } = options;
+        const skip = (page - 1) * limit;
+        const filter = { userId: new mongoose_2.Types.ObjectId(userId) };
+        if (status)
+            filter.status = status;
+        if (type)
+            filter.type = type;
+        if (symbol)
+            filter.symbol = symbol;
+        const [notifications, total] = await Promise.all([
+            this.notificationModel
+                .find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            this.notificationModel.countDocuments(filter),
+        ]);
+        return {
+            notifications,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+    async markAsRead(notificationId, userId) {
+        return await this.notificationModel
+            .findOneAndUpdate({ _id: notificationId, userId: new mongoose_2.Types.ObjectId(userId) }, {
+            status: 'read',
+            readAt: new Date(),
+        }, { new: true })
+            .lean();
+    }
+    async markMultipleAsRead(notificationIds, userId) {
+        const result = await this.notificationModel.updateMany({
+            _id: { $in: notificationIds },
+            userId: new mongoose_2.Types.ObjectId(userId),
+            status: 'unread',
+        }, {
+            status: 'read',
+            readAt: new Date(),
+        });
+        this.logger.log(`Marked ${result.modifiedCount} notifications as read for user ${userId}`);
+        return { modifiedCount: result.modifiedCount };
+    }
+    async markAllAsRead(userId, filters) {
+        const filter = {
+            userId: new mongoose_2.Types.ObjectId(userId),
+            status: 'unread',
+        };
+        if (filters?.type)
+            filter.type = filters.type;
+        if (filters?.symbol)
+            filter.symbol = filters.symbol;
+        const result = await this.notificationModel.updateMany(filter, {
+            status: 'read',
+            readAt: new Date(),
+        });
+        this.logger.log(`Marked ${result.modifiedCount} notifications as read for user ${userId}`);
+        return { modifiedCount: result.modifiedCount };
+    }
+    async archiveNotification(notificationId, userId) {
+        return await this.notificationModel
+            .findOneAndUpdate({ _id: notificationId, userId: new mongoose_2.Types.ObjectId(userId) }, {
+            status: 'archived',
+            archivedAt: new Date(),
+        }, { new: true })
+            .lean();
+    }
+    async archiveMultiple(notificationIds, userId) {
+        const result = await this.notificationModel.updateMany({
+            _id: { $in: notificationIds },
+            userId: new mongoose_2.Types.ObjectId(userId),
+        }, {
+            status: 'archived',
+            archivedAt: new Date(),
+        });
+        this.logger.log(`Archived ${result.modifiedCount} notifications for user ${userId}`);
+        return { modifiedCount: result.modifiedCount };
+    }
+    async deleteNotification(notificationId, userId) {
+        const result = await this.notificationModel.deleteOne({
+            _id: notificationId,
+            userId: new mongoose_2.Types.ObjectId(userId),
+        });
+        return result.deletedCount > 0;
+    }
+    async deleteMultiple(notificationIds, userId) {
+        const result = await this.notificationModel.deleteMany({
+            _id: { $in: notificationIds },
+            userId: new mongoose_2.Types.ObjectId(userId),
+        });
+        this.logger.log(`Deleted ${result.deletedCount} notifications for user ${userId}`);
+        return { deletedCount: result.deletedCount };
+    }
+    async getNotificationStats(userId) {
+        const [total, unread, read, archived, byType, byPriority] = await Promise.all([
+            this.notificationModel.countDocuments({
+                userId: new mongoose_2.Types.ObjectId(userId),
+            }),
+            this.notificationModel.countDocuments({
+                userId: new mongoose_2.Types.ObjectId(userId),
+                status: 'unread',
+            }),
+            this.notificationModel.countDocuments({
+                userId: new mongoose_2.Types.ObjectId(userId),
+                status: 'read',
+            }),
+            this.notificationModel.countDocuments({
+                userId: new mongoose_2.Types.ObjectId(userId),
+                status: 'archived',
+            }),
+            this.notificationModel.aggregate([
+                { $match: { userId: new mongoose_2.Types.ObjectId(userId) } },
+                { $group: { _id: '$type', count: { $sum: 1 } } },
+                { $project: { type: '$_id', count: 1, _id: 0 } },
+            ]),
+            this.notificationModel.aggregate([
+                { $match: { userId: new mongoose_2.Types.ObjectId(userId) } },
+                { $group: { _id: '$priority', count: { $sum: 1 } } },
+                { $project: { priority: '$_id', count: 1, _id: 0 } },
+            ]),
+        ]);
+        return {
+            total,
+            unread,
+            read,
+            archived,
+            byType: byType.reduce((acc, item) => ({ ...acc, [item.type]: item.count }), {}),
+            byPriority: byPriority.reduce((acc, item) => ({ ...acc, [item.priority]: item.count }), {}),
+        };
+    }
+    async cleanupExpiredNotifications() {
+        const result = await this.notificationModel.deleteMany({
+            expiresAt: { $lt: new Date() },
+        });
+        this.logger.log(`Cleaned up ${result.deletedCount} expired notifications`);
+        return { deletedCount: result.deletedCount };
+    }
+    async sendBulkNotifications(userIds, notificationData) {
+        const notifications = userIds.map((userId) => ({
+            ...notificationData,
+            userId: new mongoose_2.Types.ObjectId(userId),
+        }));
+        let createdCount = 0;
+        let failedCount = 0;
+        const errors = [];
+        try {
+            const result = await this.notificationModel.insertMany(notifications, {
+                ordered: false,
+            });
+            createdCount = result.length;
+            result.forEach((notification) => {
+                this.emitNotification({ ...notification.toObject() });
+            });
+            this.logger.log(`Created ${createdCount} bulk notifications`);
+        }
+        catch (error) {
+            if (error.writeErrors) {
+                createdCount = error.result?.insertedCount || 0;
+                failedCount = error.writeErrors.length;
+                errors.push(...error.writeErrors.map((e) => e.errmsg));
+            }
+            else {
+                failedCount = userIds.length;
+                errors.push(error.message);
+            }
+        }
+        return { createdCount, failedCount, errors };
     }
 };
 exports.NotificationService = NotificationService;

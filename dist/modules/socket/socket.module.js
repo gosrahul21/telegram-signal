@@ -25,7 +25,7 @@ exports.SocketModule = SocketModule = __decorate([
             socket_auth_middleware_1.SocketAuthMiddleware,
             socket_listener_service_1.SocketListenerService,
         ],
-        exports: [socket_service_1.SocketService, socket_listener_service_1.SocketListenerService],
+        exports: [socket_service_1.SocketService, socket_listener_service_1.SocketListenerService, socket_gateway_1.SocketGateway],
     })
 ], SocketModule);
 //# sourceMappingURL=socket.module.js.map

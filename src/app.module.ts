@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { BotModule } from './bot/bot.module';
 import { HealthModule } from './modules/health/health.module';
 import { NotificationModule } from './modules/notification';
 import { AuthModule } from './modules/auth/auth.module';
@@ -11,6 +10,7 @@ import { SocketModule } from './modules/socket/socket.module';
 import { AlertModule } from './modules/alert/alert.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { BotModule } from '@/modules/bot/bot.module';
 
 @Module({
   imports: [
@@ -22,7 +22,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     BotModule,
-    HealthModule,
+    // HealthModule,
     NotificationModule,
     AuthModule,
     UserModule,

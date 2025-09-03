@@ -22,10 +22,6 @@ async function bootstrap() {
     `Swagger documentation available at: http://localhost:${port}/api/docs`,
   );
 
-  // // Start the bot service
-  // const botService = app.get('BotService');
-  // await botService.start();
-  // console.log('Telegram bot started successfully!');
 }
 
 bootstrap();

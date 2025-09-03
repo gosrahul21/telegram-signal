@@ -8,6 +8,7 @@ export declare class UserController {
     getProfile(req: any): Promise<import(".").UserDocument>;
     findOne(id: string): Promise<import(".").UserDocument>;
     update(id: string, updateData: any): Promise<import(".").UserDocument>;
+    updateTelegramData(id: string, updateData: any): Promise<import(".").UserDocument>;
     remove(id: string): Promise<void>;
     verifyUser(id: string): Promise<import(".").UserDocument>;
 }

@@ -23,9 +23,9 @@ let AlertController = class AlertController {
     constructor(alertService) {
         this.alertService = alertService;
     }
-    create(createAlertDto) {
-        console.log('createAlertDto', createAlertDto);
-        return this.alertService.create(createAlertDto);
+    create(createAlertDto, req) {
+        const userId = req.user.id;
+        return this.alertService.create({ ...createAlertDto, userId });
     }
     findAll(query) {
         return this.alertService.findAll(query);
@@ -36,14 +36,16 @@ let AlertController = class AlertController {
     findAlertsBySymbol(symbol) {
         return this.alertService.findAlertsBySymbol(symbol);
     }
-    findByUserId(userId) {
+    findByUserId(req) {
+        const userId = req.user.id;
         return this.alertService.findByUserId(userId);
     }
     findOne(id) {
         return this.alertService.findOne(id);
     }
-    update(id, updateAlertDto) {
-        return this.alertService.update(id, updateAlertDto);
+    update(id, updateAlertDto, req) {
+        const userId = req.user.id;
+        return this.alertService.update(id, { ...updateAlertDto, userId });
     }
     remove(id) {
         return this.alertService.remove(id);
@@ -55,8 +57,9 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_alert_dto_1.CreateAlertDto]),
+    __metadata("design:paramtypes", [create_alert_dto_1.CreateAlertDto, Object]),
     __metadata("design:returntype", void 0)
 ], AlertController.prototype, "create", null);
 __decorate([
@@ -80,10 +83,11 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AlertController.prototype, "findAlertsBySymbol", null);
 __decorate([
-    (0, common_1.Get)('user/:userId'),
-    __param(0, (0, common_1.Param)('userId')),
+    (0, common_1.Get)('user'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AlertController.prototype, "findByUserId", null);
 __decorate([
@@ -95,10 +99,12 @@ __decorate([
 ], AlertController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_alert_dto_1.UpdateAlertDto]),
+    __metadata("design:paramtypes", [String, update_alert_dto_1.UpdateAlertDto, Object]),
     __metadata("design:returntype", void 0)
 ], AlertController.prototype, "update", null);
 __decorate([
