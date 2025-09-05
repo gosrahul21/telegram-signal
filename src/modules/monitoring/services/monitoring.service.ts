@@ -4,15 +4,21 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { TechnicalAnalysisService } from './technical-analysis.service';
-import { PriceMonitoringService } from './price-monitoring.service';
-import { Monitoring, MonitoringDocument } from './monitoring.entity';
+import {
+  BollingerBandsResult,
+  EMACrossoverResult,
+  RSIResult,
+  MACDResult,
+  TechnicalAnalysisService,
+} from '../technical-analysis.service';
+import { PriceMonitoringService } from '../price-monitoring.service';
+import { Monitoring, MonitoringDocument } from '../entity/monitoring.entity';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { MonitorEventType } from '../alert';
+import { MonitorEventType } from '../../alert';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventsType } from '@/utils/constants/eventsType';
-import { CreateMonitoringDto } from './dto/create-monitoring.dto';
+import { CreateMonitoringDto } from '../dto/create-monitoring.dto';
 
 @Injectable()
 export class MonitoringService implements OnModuleInit, OnModuleDestroy {
@@ -69,7 +75,10 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
         );
       }
       existing.count = monitoring.count;
-      this.logger.log(`Updating monitoring for ${monitoring.symbol} - ${monitoring.eventType} - ${monitoring.timeframe}`, monitoring.count);
+      this.logger.log(
+        `Updating monitoring for ${monitoring.symbol} - ${monitoring.eventType} - ${monitoring.timeframe}`,
+        monitoring.count,
+      );
       await this.monitoringModel.updateOne(
         {
           symbol: monitoring.symbol,
@@ -80,7 +89,8 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
       );
     } else {
       this.monitorings.push(monitoring as Monitoring);
-      (monitoring as Monitoring).monitoringInterval = this.startMonitoringByType(monitoring as Monitoring);
+      (monitoring as Monitoring).monitoringInterval =
+        this.startMonitoringByType(monitoring as Monitoring);
 
       this.logger.log(
         `Started monitoring for ${monitoring.symbol} - ${monitoring.eventType} - ${monitoring.timeframe}`,
@@ -122,11 +132,19 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   /** Core monitoring by type */
   private startMonitoringByType(monitoring: Monitoring): NodeJS.Timeout {
     const { symbol, timeframe, eventType } = monitoring;
-    this.logger.log(`Starting monitoring for ${symbol} - ${eventType} - ${timeframe}`);
+    this.logger.log(
+      `Starting monitoring for ${symbol} - ${eventType} - ${timeframe}`,
+    );
     const interval = setInterval(async () => {
       try {
         let conditionMet = false;
-        let triggerData: any = {};
+        let triggerData: {
+          currentPrice?: number;
+          bbData?: BollingerBandsResult;
+          emaData?: EMACrossoverResult;
+          rsiData?: RSIResult;
+          macdData?: MACDResult;
+        } = {};
 
         switch (eventType) {
           case MonitorEventType.BOLLINGER_BANDS_HIGH:
@@ -165,7 +183,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
             );
             conditionMet = this.checkRSICondition(
               rsiData,
-              eventType === MonitorEventType.RSI_LOW ? 30 : 75,
+              eventType === MonitorEventType.RSI_LOW ? 30 : 70,
               eventType,
             );
             triggerData = { rsiData };

@@ -8,7 +8,7 @@ import { UserModule } from './modules/user/user.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SocketModule } from './modules/socket/socket.module';
 import { AlertModule } from './modules/alert/alert.module';
-import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { MonitoringModule } from './modules/monitoring/services/monitoring.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BotModule } from '@/modules/bot/bot.module';
 

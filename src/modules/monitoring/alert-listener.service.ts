@@ -5,7 +5,7 @@ import {
   AlertDeletedEvent,
   AlertUpdatedEvent,
 } from '../alert';
-import { MonitoringService } from './monitoring.service';
+import { MonitoringService } from './services/monitoring.service';
 import { EventsType } from '@/utils/constants/eventsType';
 import { MonitorEventType } from '../alert';
 import { CreateMonitoringDto } from './dto/create-monitoring.dto';

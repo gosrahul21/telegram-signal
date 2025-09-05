@@ -1,6 +1,70 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PriceMonitoringService } from './price-monitoring.service';
 
+export interface BollingerBandsResult {
+  upperBand: number;
+  lowerBand: number;
+  middleBand: number;
+  standardDeviation: number;
+  period: number;
+  stdDev: number;
+  timestamp: Date;
+}
+
+export interface EMACrossoverResult {
+  fastEMA: number;
+  slowEMA: number;
+  previousFastEMA: number;
+  previousSlowEMA: number;
+  fastPeriod: number;
+  slowPeriod: number;
+  crossover: string | null;
+  timestamp: Date;
+}
+
+export interface RSIResult {
+  rsi: number;
+  period: number;
+  avgGain: number;
+  avgLoss: number;
+  rs: number;
+  timestamp: Date;
+}
+
+export interface MACDResult {
+  macd: number;
+  signal: number;
+  histogram: number;
+  fastPeriod: number;
+  slowPeriod: number;
+  signalPeriod: number;
+  timestamp: Date;
+}
+
+export interface StochasticResult {
+  k: number;
+  d: number;
+  kPeriod: number;
+  dPeriod: number;
+  timestamp: Date;
+}
+
+export interface VolumeAnalysisResult {
+  currentVolume: number;
+  avgVolume: number;
+  volumeRatio: number;
+  period: number;
+  timestamp: Date;
+}
+
+export interface PriceActionResult {
+  patterns: string[];
+  support: number;
+  resistance: number;
+  period: number;
+  timestamp: Date;
+}
+
 @Injectable()
 export class TechnicalAnalysisService {
   private readonly logger = new Logger(TechnicalAnalysisService.name);
@@ -9,20 +73,31 @@ export class TechnicalAnalysisService {
     private readonly priceMonitoringService: PriceMonitoringService,
   ) {}
 
-  async getBollingerBands(symbol: string, timeframe: string, period: number = 20, stdDev: number = 2): Promise<any> {
+  async getBollingerBands(
+    symbol: string,
+    timeframe: string,
+    period: number = 20,
+    stdDev: number = 2,
+  ): Promise<BollingerBandsResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, period + 1);
-      
+      const prices = await this.priceMonitoringService.getHistoricalPrices(
+        symbol,
+        timeframe,
+        period + 1,
+      );
+
       if (prices.length < period) {
-        throw new Error(`Insufficient data for Bollinger Bands calculation. Need ${period}, got ${prices.length}`);
+        throw new Error(
+          `Insufficient data for Bollinger Bands calculation. Need ${period}, got ${prices.length}`,
+        );
       }
 
       const sma = this.calculateSMA(prices, period);
       const variance = this.calculateVariance(prices, sma, period);
       const standardDeviation = Math.sqrt(variance);
 
-      const upperBand = sma + (standardDeviation * stdDev);
-      const lowerBand = sma - (standardDeviation * stdDev);
+      const upperBand = sma + standardDeviation * stdDev;
+      const lowerBand = sma - standardDeviation * stdDev;
       const middleBand = sma;
 
       return {
@@ -35,26 +110,49 @@ export class TechnicalAnalysisService {
         timestamp: new Date(),
       };
     } catch (error) {
-      this.logger.error(`Error calculating Bollinger Bands for ${symbol}:`, error);
+      this.logger.error(
+        `Error calculating Bollinger Bands for ${symbol}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async getEMACrossover(symbol: string, timeframe: string, fastPeriod: number = 12, slowPeriod: number = 26): Promise<any> {
+  async getEMACrossover(
+    symbol: string,
+    timeframe: string,
+    fastPeriod: number = 12,
+    slowPeriod: number = 26,
+  ): Promise<EMACrossoverResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, Math.max(fastPeriod, slowPeriod) + 1);
-      
+      const prices = await this.priceMonitoringService.getHistoricalPrices(
+        symbol,
+        timeframe,
+        Math.max(fastPeriod, slowPeriod) + 1,
+      );
+
       if (prices.length < Math.max(fastPeriod, slowPeriod)) {
         throw new Error(`Insufficient data for EMA crossover calculation`);
       }
 
       const fastEMA = this.calculateEMA(prices, fastPeriod);
       const slowEMA = this.calculateEMA(prices, slowPeriod);
-      
+
       // Get previous values for crossover detection
-      const previousPrices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, Math.max(fastPeriod, slowPeriod) + 2);
-      const previousFastEMA = this.calculateEMA(previousPrices.slice(0, -1), fastPeriod);
-      const previousSlowEMA = this.calculateEMA(previousPrices.slice(0, -1), slowPeriod);
+      const previousPrices =
+        await this.priceMonitoringService.getHistoricalPrices(
+          symbol,
+          timeframe,
+          Math.max(fastPeriod, slowPeriod) + 2,
+        );
+      const previousFastEMA = this.calculateEMA(
+        previousPrices.slice(0, -1),
+        fastPeriod,
+      );
+      const previousSlowEMA = this.calculateEMA(
+        previousPrices.slice(0, -1),
+        slowPeriod,
+      );
 
       return {
         fastEMA,
@@ -63,21 +161,39 @@ export class TechnicalAnalysisService {
         previousSlowEMA,
         fastPeriod,
         slowPeriod,
-        crossover: this.detectCrossover(previousFastEMA, previousSlowEMA, fastEMA, slowEMA),
+        crossover: this.detectCrossover(
+          previousFastEMA,
+          previousSlowEMA,
+          fastEMA,
+          slowEMA,
+        ),
         timestamp: new Date(),
       };
     } catch (error) {
-      this.logger.error(`Error calculating EMA crossover for ${symbol}:`, error);
+      this.logger.error(
+        `Error calculating EMA crossover for ${symbol}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async getRSI(symbol: string, timeframe: string, period: number = 14): Promise<any> {
+  async getRSI(
+    symbol: string,
+    timeframe: string,
+    period: number = 14,
+  ): Promise<RSIResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, period + 1);
-      
+      const prices = await this.priceMonitoringService.getHistoricalPrices(
+        symbol,
+        timeframe,
+        period + 1,
+      );
+
       if (prices.length < period + 1) {
-        throw new Error(`Insufficient data for RSI calculation. Need ${period + 1}, got ${prices.length}`);
+        throw new Error(
+          `Insufficient data for RSI calculation. Need ${period + 1}, got ${prices.length}`,
+        );
       }
 
       const gains = [];
@@ -93,7 +209,7 @@ export class TechnicalAnalysisService {
       const avgLoss = this.calculateEMA(losses, period);
 
       const rs = avgGain / avgLoss;
-      const rsi = 100 - (100 / (1 + rs));
+      const rsi = 100 - 100 / (1 + rs);
 
       return {
         rsi,
@@ -109,10 +225,20 @@ export class TechnicalAnalysisService {
     }
   }
 
-  async getMACD(symbol: string, timeframe: string, fastPeriod: number = 12, slowPeriod: number = 26, signalPeriod: number = 9): Promise<any> {
+  async getMACD(
+    symbol: string,
+    timeframe: string,
+    fastPeriod: number = 12,
+    slowPeriod: number = 26,
+    signalPeriod: number = 9,
+  ): Promise<MACDResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, slowPeriod + signalPeriod);
-      
+      const prices = await this.priceMonitoringService.getHistoricalPrices(
+        symbol,
+        timeframe,
+        slowPeriod + signalPeriod,
+      );
+
       if (prices.length < slowPeriod + signalPeriod) {
         throw new Error(`Insufficient data for MACD calculation`);
       }
@@ -124,8 +250,14 @@ export class TechnicalAnalysisService {
       // Calculate signal line (EMA of MACD)
       const macdValues = [];
       for (let i = 0; i < prices.length - slowPeriod; i++) {
-        const fastEMAValue = this.calculateEMA(prices.slice(i, i + slowPeriod), fastPeriod);
-        const slowEMAValue = this.calculateEMA(prices.slice(i, i + slowPeriod), slowPeriod);
+        const fastEMAValue = this.calculateEMA(
+          prices.slice(i, i + slowPeriod),
+          fastPeriod,
+        );
+        const slowEMAValue = this.calculateEMA(
+          prices.slice(i, i + slowPeriod),
+          slowPeriod,
+        );
         macdValues.push(fastEMAValue - slowEMAValue);
       }
 
@@ -147,10 +279,19 @@ export class TechnicalAnalysisService {
     }
   }
 
-  async getStochastic(symbol: string, timeframe: string, kPeriod: number = 14, dPeriod: number = 3): Promise<any> {
+  async getStochastic(
+    symbol: string,
+    timeframe: string,
+    kPeriod: number = 14,
+    dPeriod: number = 3,
+  ): Promise<StochasticResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, kPeriod + dPeriod);
-      
+      const prices = await this.priceMonitoringService.getHistoricalPrices(
+        symbol,
+        timeframe,
+        kPeriod + dPeriod,
+      );
+
       if (prices.length < kPeriod + dPeriod) {
         throw new Error(`Insufficient data for Stochastic calculation`);
       }
@@ -161,7 +302,7 @@ export class TechnicalAnalysisService {
         const highest = Math.max(...periodPrices);
         const lowest = Math.min(...periodPrices);
         const current = prices[i];
-        
+
         const k = ((current - lowest) / (highest - lowest)) * 100;
         kValues.push(k);
       }
@@ -182,10 +323,18 @@ export class TechnicalAnalysisService {
     }
   }
 
-  async getVolumeAnalysis(symbol: string, timeframe: string, period: number = 20): Promise<any> {
+  async getVolumeAnalysis(
+    symbol: string,
+    timeframe: string,
+    period: number = 20,
+  ): Promise<VolumeAnalysisResult> {
     try {
-      const volumeData = await this.priceMonitoringService.getHistoricalVolumes(symbol, timeframe, period);
-      
+      const volumeData = await this.priceMonitoringService.getHistoricalVolumes(
+        symbol,
+        timeframe,
+        period,
+      );
+
       if (volumeData.length < period) {
         throw new Error(`Insufficient volume data for analysis`);
       }
@@ -202,15 +351,26 @@ export class TechnicalAnalysisService {
         timestamp: new Date(),
       };
     } catch (error) {
-      this.logger.error(`Error calculating volume analysis for ${symbol}:`, error);
+      this.logger.error(
+        `Error calculating volume analysis for ${symbol}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async getPriceAction(symbol: string, timeframe: string, period: number = 5): Promise<any> {
+  async getPriceAction(
+    symbol: string,
+    timeframe: string,
+    period: number = 5,
+  ): Promise<PriceActionResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, period + 1);
-      
+      const prices = await this.priceMonitoringService.getHistoricalPrices(
+        symbol,
+        timeframe,
+        period + 1,
+      );
+
       if (prices.length < period + 1) {
         throw new Error(`Insufficient data for price action analysis`);
       }
@@ -243,19 +403,30 @@ export class TechnicalAnalysisService {
     let ema = prices[0];
 
     for (let i = 1; i < prices.length; i++) {
-      ema = (prices[i] * multiplier) + (ema * (1 - multiplier));
+      ema = prices[i] * multiplier + ema * (1 - multiplier);
     }
 
     return ema;
   }
 
-  private calculateVariance(prices: number[], mean: number, period: number): number {
-    const squaredDifferences = prices.slice(-period).map(price => Math.pow(price - mean, 2));
+  private calculateVariance(
+    prices: number[],
+    mean: number,
+    period: number,
+  ): number {
+    const squaredDifferences = prices
+      .slice(-period)
+      .map((price) => Math.pow(price - mean, 2));
     const sum = squaredDifferences.reduce((acc, diff) => acc + diff, 0);
     return sum / period;
   }
 
-  private detectCrossover(prevFast: number, prevSlow: number, currFast: number, currSlow: number): string | null {
+  private detectCrossover(
+    prevFast: number,
+    prevSlow: number,
+    currFast: number,
+    currSlow: number,
+  ): string | null {
     if (prevFast <= prevSlow && currFast > currSlow) {
       return 'bullish';
     } else if (prevFast >= prevSlow && currFast < currSlow) {
@@ -266,22 +437,22 @@ export class TechnicalAnalysisService {
 
   private detectPricePatterns(prices: number[]): string[] {
     const patterns = [];
-    
+
     // Check for double top
     if (this.isDoubleTop(prices)) {
       patterns.push('double_top');
     }
-    
+
     // Check for double bottom
     if (this.isDoubleBottom(prices)) {
       patterns.push('double_bottom');
     }
-    
+
     // Check for head and shoulders
     if (this.isHeadAndShoulders(prices)) {
       patterns.push('head_and_shoulders');
     }
-    
+
     // Check for triangle
     if (this.isTriangle(prices)) {
       patterns.push('triangle');
@@ -306,7 +477,7 @@ export class TechnicalAnalysisService {
     // Simplified head and shoulders detection
     const peaks = this.findPeaks(prices);
     if (peaks.length < 3) return false;
-    
+
     const [left, head, right] = peaks.slice(-3);
     return head > left && head > right && Math.abs(left - right) < 0.02;
   }
@@ -315,13 +486,13 @@ export class TechnicalAnalysisService {
     // Simplified triangle detection
     const highs = this.findPeaks(prices);
     const lows = this.findTroughs(prices);
-    
+
     if (highs.length < 2 || lows.length < 2) return false;
-    
+
     // Check if highs are descending and lows are ascending (ascending triangle)
     const highSlope = (highs[1] - highs[0]) / (highs.length - 1);
     const lowSlope = (lows[1] - lows[0]) / (lows.length - 1);
-    
+
     return highSlope < 0 && lowSlope > 0;
   }
 
