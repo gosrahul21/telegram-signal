@@ -9,6 +9,10 @@ import {
   NotificationPriority,
 } from './notification.entity';
 import { EventsType } from '@/utils/constants/eventsType';
+import {
+  AlertTriggeredUserPayload,
+  AlertTriggeredOrderPayload,
+} from '../alert/types';
 
 @Injectable()
 export class NotificationService {
@@ -23,7 +27,11 @@ export class NotificationService {
   /**
    * Create a new notification and emit event
    */
-  async createNotification(data: Partial<Notification>): Promise<Notification> {
+  async createNotification(
+    data: Omit<Partial<Notification>, 'userId'> & {
+      userId: string | Types.ObjectId;
+    },
+  ): Promise<Notification> {
     const notification = new this.notificationModel({
       ...data,
       userId: new Types.ObjectId(data.userId),
@@ -36,11 +44,7 @@ export class NotificationService {
     );
 
     // Emit notification created event
-    // this.eventEmitter.emit(EventsType.NOTIFICATION_CREATED, {
-    //   ...savedNotification.toObject(),
-    //   timestamp: new Date(),
-    // });\\
-    // return savedNotification;
+
     this.emitNotification({ ...savedNotification.toObject() });
     return savedNotification;
   }
@@ -53,20 +57,23 @@ export class NotificationService {
    * Listener for user alerts
    */
   @OnEvent(EventsType.ALERT_TRIGGERED_USER, { async: true })
-  async handleUserAlert(payload: any) {
+  async handleUserAlert(payload: AlertTriggeredUserPayload) {
     this.logger.log(`Creating USER notification: ${JSON.stringify(payload)}`);
 
+    const { monitoring, alertId, userId, count } = payload;
+    const { symbol, timeframe, eventType } = monitoring;
+
     await this.createNotification({
-      userId: payload.userId,
+      userId: userId.toString(),
       type: NotificationType.ALERT_TRIGGERED,
       priority: NotificationPriority.HIGH,
-      title: `Alert triggered for ${payload.symbol}`,
-      message: `Your alert (${payload.eventType}) was triggered on ${payload.symbol} (${payload.timeframe}).`,
+      title: `Alert triggered for ${symbol}`,
+      message: `Your alert (${eventType}) was triggered on ${symbol} (${timeframe}).`,
       data: payload,
-      symbol: payload.symbol,
-      timeframe: payload.timeframe,
-      eventType: payload.eventType,
-      alertId: payload.alertId,
+      symbol,
+      timeframe,
+      eventType,
+      alertId,
     });
   }
 
@@ -74,20 +81,23 @@ export class NotificationService {
    * Listener for order alerts
    */
   @OnEvent(EventsType.ALERT_TRIGGERED_ORDER, { async: true })
-  async handleOrderAlert(payload: any) {
+  async handleOrderAlert(payload: AlertTriggeredOrderPayload) {
     this.logger.log(`Creating ORDER notification: ${JSON.stringify(payload)}`);
 
+    const { monitoring, alertId, userId, count, orderId } = payload;
+    const { symbol, timeframe, eventType } = monitoring;
+
     await this.createNotification({
-      userId: payload.userId,
+      userId: userId.toString(),
       type: NotificationType.ORDER_STATUS,
       priority: NotificationPriority.MEDIUM,
       title: `Order update`,
-      message: `Your order alert (${payload.eventType}) was triggered for ${payload.symbol}.`,
+      message: `Your order alert (${eventType}) was triggered for ${symbol}.`,
       data: payload,
-      symbol: payload.symbol,
-      timeframe: payload.timeframe,
-      eventType: payload.eventType,
-      alertId: payload.alertId,
+      symbol,
+      timeframe,
+      eventType,
+      alertId,
     });
   }
 

@@ -3,6 +3,9 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { AlertService } from './alert.service';
 import { EventsType } from '@/utils/constants/eventsType';
 import { AlertFor } from '@/utils/types/AlertFor';
+import { MonitoringTriggeredPayload } from '../monitoring/types';
+import { AlertTriggeredUserPayload, AlertTriggeredOrderPayload } from './types';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class AlertListenerService {
@@ -14,8 +17,11 @@ export class AlertListenerService {
    * Listener for monitoring triggered events
    */
   @OnEvent(EventsType.MONITORING_TRIGGERED, { async: true })
-  async handleMonitoringTriggered(payload: any) {
-    const { symbol, timeframe, eventType } = payload;
+  async handleMonitoringTriggered(payload: MonitoringTriggeredPayload) {
+    const {
+      monitoring: { symbol, timeframe, eventType },
+      triggerData,
+    } = payload;
     this.logger.log(
       `Received monitoring event for ${symbol} ${timeframe} ${eventType}`,
     );
@@ -38,25 +44,27 @@ export class AlertListenerService {
 
       // Decide which event to emit (user / order)
       if (alert.alertFor === AlertFor.USER) {
+        const userPayload: AlertTriggeredUserPayload = {
+          ...payload,
+          alertId: alert.uuid,
+          userId: alert.userId as Types.ObjectId,
+          count: updatedCount,
+        };
         await this.alertService.emitCustomEvent(
           EventsType.ALERT_TRIGGERED_USER,
-          {
-            ...payload,
-            alertId: alert.uuid,
-            userId: alert.userId,
-            count: updatedCount,
-          },
+          userPayload,
         );
       } else if (alert.alertFor === AlertFor.ORDER) {
+        const orderPayload: AlertTriggeredOrderPayload = {
+          ...payload,
+          alertId: alert.uuid,
+          orderId: alert.orderId?.toString() || '',
+          userId: alert.userId as Types.ObjectId,
+          count: updatedCount,
+        };
         await this.alertService.emitCustomEvent(
           EventsType.ALERT_TRIGGERED_ORDER,
-          {
-            ...payload,
-            alertId: alert.uuid,
-            orderId: alert.orderId,
-            userId: alert.userId,
-            count: updatedCount,
-          },
+          orderPayload,
         );
       }
     }

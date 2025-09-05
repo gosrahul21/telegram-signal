@@ -19,7 +19,7 @@ import { MonitorEventType } from '../../alert';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventsType } from '@/utils/constants/eventsType';
 import { CreateMonitoringDto } from '../dto/create-monitoring.dto';
-
+import { TriggerData } from '../types';
 @Injectable()
 export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MonitoringService.name);
@@ -138,13 +138,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
     const interval = setInterval(async () => {
       try {
         let conditionMet = false;
-        let triggerData: {
-          currentPrice?: number;
-          bbData?: BollingerBandsResult;
-          emaData?: EMACrossoverResult;
-          rsiData?: RSIResult;
-          macdData?: MACDResult;
-        } = {};
+        let triggerData: TriggerData = {};
 
         switch (eventType) {
           case MonitorEventType.BOLLINGER_BANDS_HIGH:
@@ -216,7 +210,10 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Trigger alert */
-  private async triggerAlert(monitoring: Monitoring, triggerData: any) {
+  private async triggerAlert(
+    monitoring: Monitoring,
+    triggerData: TriggerData,
+  ): Promise<void> {
     try {
       this.eventEmitter.emit(EventsType.MONITORING_TRIGGERED, {
         monitoring,
