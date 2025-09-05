@@ -11,10 +11,12 @@ import { User, UserDocument } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
+  private cache = new Map<string, UserDocument>();
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async create(userData: CreateUserDto): Promise<UserDocument> {
     const user = await this.userModel.create(userData);
+    this.cache.set(user._id.toString(), user.toJSON() as UserDocument);
     return user.toJSON() as UserDocument;
   }
 
@@ -23,11 +25,15 @@ export class UserService {
   }
 
   async findById(id: string): Promise<UserDocument> {
+    if (this.cache.has(id)) {
+      return this.cache.get(id);
+    }
     const user = await this.userModel.findById(id).lean();
 
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+    this.cache.set(id, user);
 
     return user;
   }
@@ -45,7 +51,7 @@ export class UserService {
   }
 
   async update(id: string, updateData: Partial<User>): Promise<UserDocument> {
-    const user = await this.findById(id);
+    // const user = await this.findById(id);
 
     // Hash password if it's being updated
     if (updateData.password) {
@@ -53,13 +59,18 @@ export class UserService {
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
 
-    Object.assign(user, updateData);
-    return user.save();
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(id, updateData, { new: true })
+      .lean();
+    this.cache.set(id, updatedUser);
+    return updatedUser;
   }
 
   async remove(id: string): Promise<void> {
     const user = await this.findById(id);
-    await user.deleteOne();
+    // await user.deleteOne();
+    await this.userModel.findByIdAndDelete(id);
+    this.cache.delete(id);
   }
 
   async linkTelegramAccount(
@@ -94,13 +105,13 @@ export class UserService {
     user.isVerified = true; // Mark as verified since they linked their telegram
     user.lastLogin = new Date();
 
-    return user.save();
+    return this.userModel.findByIdAndUpdate(userId, user, { new: true }).lean();
   }
 
   async verifyUser(userId: string): Promise<UserDocument> {
     const user = await this.findById(userId);
     user.isVerified = true;
-    return user.save();
+    return this.userModel.findByIdAndUpdate(userId, user, { new: true }).lean();
   }
 
   async updateLastLogin(userId: string): Promise<void> {

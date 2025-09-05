@@ -5,6 +5,11 @@ import { BotService } from './bot.service';
 import { UserService } from '../user/user.service';
 import { MonitorEventType } from '../alert';
 import { NotificationType } from '../notification/notification.entity';
+import { NotificationCreatedPayload } from '../notification/types';
+import {
+  AlertTriggeredUserPayload,
+  AlertTriggeredOrderPayload,
+} from '../alert/types';
 
 @Injectable()
 export class BotNotificationListenerService {
@@ -19,14 +24,15 @@ export class BotNotificationListenerService {
    * Handle notification.created and send via Telegram
    */
   @OnEvent(EventsType.NOTIFICATION_CREATED, { async: true })
-  async handleNotificationCreated(payload: any) {
-    this.logger.log(`Bot received notification for user ${payload.userId}`);
+  async handleNotificationCreated(payload: NotificationCreatedPayload) {
+    const userId = payload.userId.toString();
+    this.logger.log(`Bot received notification for user ${userId}`);
 
     try {
       // Get user by userId
-      const user = await this.userService.findById(payload.userId);
+      const user = await this.userService.findById(userId);
       if (!user || !user.telegramId) {
-        this.logger.warn(`User ${payload.userId} not found or no telegramId`);
+        this.logger.warn(`User ${userId} not found or no telegramId`);
         return;
       }
 
@@ -37,11 +43,11 @@ export class BotNotificationListenerService {
       await this.botService.sendMessage(user.telegramId.toString(), message);
 
       this.logger.log(
-        `Telegram notification sent to user ${payload.userId} (telegramId: ${user.telegramId})`,
+        `Telegram notification sent to user ${userId} (telegramId: ${user.telegramId})`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to send Telegram notification to user ${payload.userId}:`,
+        `Failed to send Telegram notification to user ${userId}:`,
         error,
       );
     }
@@ -50,7 +56,9 @@ export class BotNotificationListenerService {
   /**
    * Format notification message based on type
    */
-  private formatNotificationMessage(payload: any): string {
+  private formatNotificationMessage(
+    payload: NotificationCreatedPayload,
+  ): string {
     const { title, message, type, priority, symbol, data } = payload;
 
     // Match notification type and format accordingly
@@ -73,7 +81,9 @@ export class BotNotificationListenerService {
   /**
    * Format general notification message
    */
-  private formatGeneralNotificationMessage(payload: any): string {
+  private formatGeneralNotificationMessage(
+    payload: NotificationCreatedPayload,
+  ): string {
     const { title, message, type, priority, symbol, data } = payload;
 
     let emoji = '📢';
@@ -104,22 +114,12 @@ export class BotNotificationListenerService {
   /**
    * Format alert message
    */
-  private formatAlertMessage(payload: any): string {
-    // userId: payload.userId,
-    // type: NotificationType.ALERT_TRIGGERED,
-    // priority: NotificationPriority.HIGH,
-    // title: `Alert triggered for ${payload.symbol}`,
-    // message: `Your alert (${payload.eventType}) was triggered on ${payload.symbol} (${payload.timeframe}).`,
-    // data: payload,
-    // symbol: payload.symbol,
-    // timeframe: payload.timeframe,
-    // eventType: payload.eventType,
-    // alertId: payload.alertId,
-    console.log('formatAlertMessage payload', payload);
-    const {
-      type,
-      data: { symbol, eventType, timeframe, alertId },
-    } = payload;
+  private formatAlertMessage(payload: NotificationCreatedPayload): string {
+    const { symbol, eventType, timeframe, alertId, data } = payload;
+
+    // Extract technical analysis data from the nested data structure
+    const alertData = data as AlertTriggeredUserPayload;
+    const { monitoring, triggerData } = alertData;
 
     let emoji = '🚨';
     let signal = 'ALERT';
@@ -158,16 +158,36 @@ export class BotNotificationListenerService {
     }
     message += `\n`;
 
-    if (payload.price) {
-      message += `💰 <b>Current Price:</b> $${payload.price}\n`;
+    // Add technical analysis data if available
+    if (triggerData.currentPrice) {
+      message += `💰 <b>Current Price:</b> $${triggerData.currentPrice}\n`;
     }
 
-    if (payload.rsi) {
-      message += `📈 <b>RSI:</b> ${payload.rsi}\n`;
+    if (triggerData.rsiData?.rsi) {
+      message += `📈 <b>RSI:</b> ${triggerData.rsiData.rsi.toFixed(2)}\n`;
     }
 
-    if (payload.volume) {
-      message += `📊 <b>Volume:</b> ${payload.volume.toLocaleString()}\n`;
+    if (triggerData.bbData) {
+      message += `📊 <b>Bollinger Bands:</b>\n`;
+      message += `   • Upper: $${triggerData.bbData.upperBand.toFixed(2)}\n`;
+      message += `   • Middle: $${triggerData.bbData.middleBand.toFixed(2)}\n`;
+      message += `   • Lower: $${triggerData.bbData.lowerBand.toFixed(2)}\n`;
+    }
+
+    if (triggerData.emaData) {
+      message += `📈 <b>EMA Crossover:</b>\n`;
+      message += `   • Fast EMA: $${triggerData.emaData.fastEMA.toFixed(2)}\n`;
+      message += `   • Slow EMA: $${triggerData.emaData.slowEMA.toFixed(2)}\n`;
+      if (triggerData.emaData.crossover) {
+        message += `   • Crossover: ${triggerData.emaData.crossover}\n`;
+      }
+    }
+
+    if (triggerData.macdData) {
+      message += `📊 <b>MACD:</b>\n`;
+      message += `   • MACD: ${triggerData.macdData.macd.toFixed(4)}\n`;
+      message += `   • Signal: ${triggerData.macdData.signal.toFixed(4)}\n`;
+      message += `   • Histogram: ${triggerData.macdData.histogram.toFixed(4)}\n`;
     }
 
     message += `\n⏰ <b>Time:</b> ${new Date().toLocaleString()}\n\n`;
@@ -179,17 +199,41 @@ export class BotNotificationListenerService {
   /**
    * Format order update message
    */
-  private formatOrderUpdateMessage(payload: any): string {
-    const { orderId, symbol, status, side, quantity, price } = payload;
+  private formatOrderUpdateMessage(
+    payload: NotificationCreatedPayload,
+  ): string {
+    const { symbol, alertId, data } = payload;
+
+    // Extract order data from the nested data structure
+    const orderData = data as AlertTriggeredOrderPayload;
+    const { orderId } = orderData;
 
     let emoji = '📋';
+    let status = 'updated';
+    let side = 'unknown';
+    let quantity = 'N/A';
+    let price = 'N/A';
+
+    // Try to extract additional order information from the data
+    if (data && typeof data === 'object') {
+      status = (data as any).status || status;
+      side = (data as any).side || side;
+      quantity = (data as any).quantity || quantity;
+      price = (data as any).price || price;
+    }
+
     if (status === 'filled') emoji = '✅';
     else if (status === 'cancelled') emoji = '❌';
     else if (status === 'pending') emoji = '⏳';
     else if (status === 'partially_filled') emoji = '🔄';
 
     let message = `${emoji} <b>Order Update - ${symbol}</b>\n\n`;
-    message += `🆔 <b>Order ID:</b> ${orderId}\n`;
+    if (orderId) {
+      message += `🆔 <b>Order ID:</b> ${orderId}\n`;
+    }
+    if (alertId) {
+      message += `🔔 <b>Alert ID:</b> ${alertId}\n`;
+    }
     message += `📊 <b>Status:</b> ${status.toUpperCase()}\n`;
     message += `📈 <b>Side:</b> ${side.toUpperCase()}\n`;
     message += `📦 <b>Quantity:</b> ${quantity}\n`;
@@ -243,7 +287,9 @@ export class BotNotificationListenerService {
   /**
    * Format price target message
    */
-  private formatPriceTargetMessage(payload: any): string {
+  private formatPriceTargetMessage(
+    payload: NotificationCreatedPayload,
+  ): string {
     const { symbol, data } = payload;
 
     let emoji = '🎯';
@@ -262,7 +308,9 @@ export class BotNotificationListenerService {
   /**
    * Format technical indicator message
    */
-  private formatTechnicalIndicatorMessage(payload: any): string {
+  private formatTechnicalIndicatorMessage(
+    payload: NotificationCreatedPayload,
+  ): string {
     const { symbol, data } = payload;
 
     let emoji = '📊';
@@ -284,7 +332,9 @@ export class BotNotificationListenerService {
   /**
    * Format market alert message
    */
-  private formatMarketAlertMessage(payload: any): string {
+  private formatMarketAlertMessage(
+    payload: NotificationCreatedPayload,
+  ): string {
     const { title, message: alertMessage, data } = payload;
 
     let emoji = '🌍';

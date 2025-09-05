@@ -13,6 +13,7 @@ import {
   AlertTriggeredUserPayload,
   AlertTriggeredOrderPayload,
 } from '../alert/types';
+import { NotificationCreatedPayload } from './types';
 
 @Injectable()
 export class NotificationService {
@@ -49,7 +50,7 @@ export class NotificationService {
     return savedNotification;
   }
 
-  emitNotification(payload: any) {
+  emitNotification(payload: NotificationCreatedPayload) {
     this.eventEmitter.emit(EventsType.NOTIFICATION_CREATED, payload);
   }
 
