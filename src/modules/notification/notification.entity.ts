@@ -93,6 +93,10 @@ export class Notification {
 
   @Prop({ type: Date })
   expiresAt?: Date; // When this notification should be automatically cleaned up
+
+  createdAt?: Date;
+  
+  updatedAt?: Date;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
