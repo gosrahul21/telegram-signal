@@ -30,6 +30,8 @@ export enum NotificationPriority {
 
 @Schema({ timestamps: true })
 export class Notification {
+  _id?: Types.ObjectId;
+
   @Prop({ required: true, unique: true, default: () => uuidv4() })
   uuid: string;
 
