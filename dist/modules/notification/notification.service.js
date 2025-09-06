@@ -41,32 +41,36 @@ let NotificationService = NotificationService_1 = class NotificationService {
     }
     async handleUserAlert(payload) {
         this.logger.log(`Creating USER notification: ${JSON.stringify(payload)}`);
+        const { monitoring, alertId, userId, count } = payload;
+        const { symbol, timeframe, eventType } = monitoring;
         await this.createNotification({
-            userId: payload.userId,
+            userId: userId.toString(),
             type: notification_entity_1.NotificationType.ALERT_TRIGGERED,
             priority: notification_entity_1.NotificationPriority.HIGH,
-            title: `Alert triggered for ${payload.symbol}`,
-            message: `Your alert (${payload.eventType}) was triggered on ${payload.symbol} (${payload.timeframe}).`,
+            title: `Alert triggered for ${symbol}`,
+            message: `Your alert (${eventType}) was triggered on ${symbol} (${timeframe}).`,
             data: payload,
-            symbol: payload.symbol,
-            timeframe: payload.timeframe,
-            eventType: payload.eventType,
-            alertId: payload.alertId,
+            symbol,
+            timeframe,
+            eventType,
+            alertId,
         });
     }
     async handleOrderAlert(payload) {
         this.logger.log(`Creating ORDER notification: ${JSON.stringify(payload)}`);
+        const { monitoring, alertId, userId, count, orderId } = payload;
+        const { symbol, timeframe, eventType } = monitoring;
         await this.createNotification({
-            userId: payload.userId,
+            userId: userId.toString(),
             type: notification_entity_1.NotificationType.ORDER_STATUS,
             priority: notification_entity_1.NotificationPriority.MEDIUM,
             title: `Order update`,
-            message: `Your order alert (${payload.eventType}) was triggered for ${payload.symbol}.`,
+            message: `Your order alert (${eventType}) was triggered for ${symbol}.`,
             data: payload,
-            symbol: payload.symbol,
-            timeframe: payload.timeframe,
-            eventType: payload.eventType,
-            alertId: payload.alertId,
+            symbol,
+            timeframe,
+            eventType,
+            alertId,
         });
     }
     async updateNotification(id, data) {

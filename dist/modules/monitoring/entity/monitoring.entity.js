@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MonitoringSchema = exports.Monitoring = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
@@ -21,11 +22,11 @@ __decorate([
 ], Monitoring.prototype, "symbol", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, type: String }),
-    __metadata("design:type", String)
+    __metadata("design:type", typeof (_a = typeof alert_1.Timeframe !== "undefined" && alert_1.Timeframe) === "function" ? _a : Object)
 ], Monitoring.prototype, "timeframe", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, enum: alert_1.MonitorEventType }),
-    __metadata("design:type", String)
+    __metadata("design:type", typeof (_b = typeof alert_1.MonitorEventType !== "undefined" && alert_1.MonitorEventType) === "function" ? _b : Object)
 ], Monitoring.prototype, "eventType", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, type: String }),

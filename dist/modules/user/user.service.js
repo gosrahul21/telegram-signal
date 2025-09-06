@@ -20,19 +20,25 @@ const user_entity_1 = require("./entities/user.entity");
 let UserService = class UserService {
     constructor(userModel) {
         this.userModel = userModel;
+        this.cache = new Map();
     }
     async create(userData) {
         const user = await this.userModel.create(userData);
+        this.cache.set(user._id.toString(), user.toJSON());
         return user.toJSON();
     }
     async findAll() {
         return this.userModel.find().exec();
     }
     async findById(id) {
+        if (this.cache.has(id)) {
+            return this.cache.get(id);
+        }
         const user = await this.userModel.findById(id).lean();
         if (!user) {
             throw new common_1.NotFoundException(`User with ID ${id} not found`);
         }
+        this.cache.set(id, user);
         return user;
     }
     async findByUsername(username) {
@@ -45,17 +51,20 @@ let UserService = class UserService {
         return this.userModel.findOne({ chatId }).lean();
     }
     async update(id, updateData) {
-        const user = await this.findById(id);
         if (updateData.password) {
             const bcrypt = await Promise.resolve().then(() => require('bcryptjs'));
             updateData.password = await bcrypt.hash(updateData.password, 10);
         }
-        Object.assign(user, updateData);
-        return user.save();
+        const updatedUser = await this.userModel
+            .findByIdAndUpdate(id, updateData, { new: true })
+            .lean();
+        this.cache.set(id, updatedUser);
+        return updatedUser;
     }
     async remove(id) {
         const user = await this.findById(id);
-        await user.deleteOne();
+        await this.userModel.findByIdAndDelete(id);
+        this.cache.delete(id);
     }
     async linkTelegramAccount(userId, telegramId, chatId) {
         const existingUserWithTelegram = await this.findByTelegramId(telegramId);
@@ -73,12 +82,12 @@ let UserService = class UserService {
         user.chatId = chatId;
         user.isVerified = true;
         user.lastLogin = new Date();
-        return user.save();
+        return this.userModel.findByIdAndUpdate(userId, user, { new: true }).lean();
     }
     async verifyUser(userId) {
         const user = await this.findById(userId);
         user.isVerified = true;
-        return user.save();
+        return this.userModel.findByIdAndUpdate(userId, user, { new: true }).lean();
     }
     async updateLastLogin(userId) {
         await this.userModel

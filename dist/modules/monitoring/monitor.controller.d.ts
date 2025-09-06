@@ -1,4 +1,4 @@
-import { MonitoringService } from './monitoring.service';
+import { MonitoringService } from './services/monitoring.service';
 export declare class MonitorController {
     private readonly monitorService;
     constructor(monitorService: MonitoringService);

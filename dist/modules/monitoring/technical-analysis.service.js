@@ -27,8 +27,8 @@ let TechnicalAnalysisService = TechnicalAnalysisService_1 = class TechnicalAnaly
             const sma = this.calculateSMA(prices, period);
             const variance = this.calculateVariance(prices, sma, period);
             const standardDeviation = Math.sqrt(variance);
-            const upperBand = sma + (standardDeviation * stdDev);
-            const lowerBand = sma - (standardDeviation * stdDev);
+            const upperBand = sma + standardDeviation * stdDev;
+            const lowerBand = sma - standardDeviation * stdDev;
             const middleBand = sma;
             return {
                 upperBand,
@@ -88,7 +88,7 @@ let TechnicalAnalysisService = TechnicalAnalysisService_1 = class TechnicalAnaly
             const avgGain = this.calculateEMA(gains, period);
             const avgLoss = this.calculateEMA(losses, period);
             const rs = avgGain / avgLoss;
-            const rsi = 100 - (100 / (1 + rs));
+            const rsi = 100 - 100 / (1 + rs);
             return {
                 rsi,
                 period,
@@ -217,12 +217,14 @@ let TechnicalAnalysisService = TechnicalAnalysisService_1 = class TechnicalAnaly
         const multiplier = 2 / (period + 1);
         let ema = prices[0];
         for (let i = 1; i < prices.length; i++) {
-            ema = (prices[i] * multiplier) + (ema * (1 - multiplier));
+            ema = prices[i] * multiplier + ema * (1 - multiplier);
         }
         return ema;
     }
     calculateVariance(prices, mean, period) {
-        const squaredDifferences = prices.slice(-period).map(price => Math.pow(price - mean, 2));
+        const squaredDifferences = prices
+            .slice(-period)
+            .map((price) => Math.pow(price - mean, 2));
         const sum = squaredDifferences.reduce((acc, diff) => acc + diff, 0);
         return sum / period;
     }

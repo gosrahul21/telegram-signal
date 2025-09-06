@@ -15,14 +15,14 @@ var MonitoringService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MonitoringService = void 0;
 const common_1 = require("@nestjs/common");
-const technical_analysis_service_1 = require("./technical-analysis.service");
-const price_monitoring_service_1 = require("./price-monitoring.service");
-const monitoring_entity_1 = require("./monitoring.entity");
+const technical_analysis_service_1 = require("../technical-analysis.service");
+const price_monitoring_service_1 = require("../price-monitoring.service");
+const monitoring_entity_1 = require("../entity/monitoring.entity");
 const mongoose_1 = require("mongoose");
 const mongoose_2 = require("@nestjs/mongoose");
-const alert_1 = require("../alert");
+const alert_1 = require("../../alert");
 const event_emitter_1 = require("@nestjs/event-emitter");
-const eventsType_1 = require("../../utils/constants/eventsType");
+const eventsType_1 = require("../../../utils/constants/eventsType");
 let MonitoringService = MonitoringService_1 = class MonitoringService {
     constructor(technicalAnalysisService, priceMonitoringService, eventEmitter, monitoringModel) {
         this.technicalAnalysisService = technicalAnalysisService;
@@ -73,7 +73,8 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
         }
         else {
             this.monitorings.push(monitoring);
-            monitoring.monitoringInterval = this.startMonitoringByType(monitoring);
+            monitoring.monitoringInterval =
+                this.startMonitoringByType(monitoring);
             this.logger.log(`Started monitoring for ${monitoring.symbol} - ${monitoring.eventType} - ${monitoring.timeframe}`);
             await this.monitoringModel.create(monitoring);
         }
@@ -122,7 +123,7 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
                     case alert_1.MonitorEventType.RSI_LOW:
                     case alert_1.MonitorEventType.RSI_CROSSOVER_HIGH: {
                         const rsiData = await this.technicalAnalysisService.getRSI(symbol, timeframe);
-                        conditionMet = this.checkRSICondition(rsiData, eventType === alert_1.MonitorEventType.RSI_LOW ? 30 : 75, eventType);
+                        conditionMet = this.checkRSICondition(rsiData, eventType === alert_1.MonitorEventType.RSI_LOW ? 30 : 70, eventType);
                         triggerData = { rsiData };
                         break;
                     }

@@ -22,7 +22,7 @@ let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
         this.logger = new common_1.Logger(AlertListenerService_1.name);
     }
     async handleMonitoringTriggered(payload) {
-        const { symbol, timeframe, eventType } = payload;
+        const { monitoring: { symbol, timeframe, eventType }, triggerData, } = payload;
         this.logger.log(`Received monitoring event for ${symbol} ${timeframe} ${eventType}`);
         const alerts = await this.alertService.findActiveAlertsBySymbolTimeframeEventType(symbol, timeframe, eventType);
         for (const alert of alerts) {
@@ -32,21 +32,23 @@ let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
                 await this.alertService.update(alert.uuid, { count: updatedCount });
             }
             if (alert.alertFor === AlertFor_1.AlertFor.USER) {
-                await this.alertService.emitCustomEvent(eventsType_1.EventsType.ALERT_TRIGGERED_USER, {
+                const userPayload = {
                     ...payload,
                     alertId: alert.uuid,
                     userId: alert.userId,
                     count: updatedCount,
-                });
+                };
+                await this.alertService.emitCustomEvent(eventsType_1.EventsType.ALERT_TRIGGERED_USER, userPayload);
             }
             else if (alert.alertFor === AlertFor_1.AlertFor.ORDER) {
-                await this.alertService.emitCustomEvent(eventsType_1.EventsType.ALERT_TRIGGERED_ORDER, {
+                const orderPayload = {
                     ...payload,
                     alertId: alert.uuid,
-                    orderId: alert.orderId,
+                    orderId: alert.orderId?.toString() || '',
                     userId: alert.userId,
                     count: updatedCount,
-                });
+                };
+                await this.alertService.emitCustomEvent(eventsType_1.EventsType.ALERT_TRIGGERED_ORDER, orderPayload);
             }
         }
     }

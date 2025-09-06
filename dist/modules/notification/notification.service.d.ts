@@ -1,15 +1,19 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Notification, NotificationDocument, NotificationType, NotificationPriority } from './notification.entity';
+import { AlertTriggeredUserPayload, AlertTriggeredOrderPayload } from '../alert/types';
+import { NotificationCreatedPayload } from './types';
 export declare class NotificationService {
     private notificationModel;
     private readonly eventEmitter;
     private readonly logger;
     constructor(notificationModel: Model<NotificationDocument>, eventEmitter: EventEmitter2);
-    createNotification(data: Partial<Notification>): Promise<Notification>;
-    emitNotification(payload: any): void;
-    handleUserAlert(payload: any): Promise<void>;
-    handleOrderAlert(payload: any): Promise<void>;
+    createNotification(data: Omit<Partial<Notification>, 'userId'> & {
+        userId: string | Types.ObjectId;
+    }): Promise<Notification>;
+    emitNotification(payload: NotificationCreatedPayload): void;
+    handleUserAlert(payload: AlertTriggeredUserPayload): Promise<void>;
+    handleOrderAlert(payload: AlertTriggeredOrderPayload): Promise<void>;
     updateNotification(id: string, data: Partial<Notification>): Promise<Notification>;
     getUserNotifications(userId: string, options?: {
         page?: number;

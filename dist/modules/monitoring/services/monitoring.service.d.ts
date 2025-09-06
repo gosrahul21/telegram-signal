@@ -1,11 +1,11 @@
 import { OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { TechnicalAnalysisService } from './technical-analysis.service';
-import { PriceMonitoringService } from './price-monitoring.service';
-import { Monitoring, MonitoringDocument } from './monitoring.entity';
+import { TechnicalAnalysisService } from '../technical-analysis.service';
+import { PriceMonitoringService } from '../price-monitoring.service';
+import { Monitoring, MonitoringDocument } from '../entity/monitoring.entity';
 import { Model } from 'mongoose';
-import { MonitorEventType } from '../alert';
+import { MonitorEventType } from '../../alert';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CreateMonitoringDto } from './dto/create-monitoring.dto';
+import { CreateMonitoringDto } from '../dto/create-monitoring.dto';
 export declare class MonitoringService implements OnModuleInit, OnModuleDestroy {
     private readonly technicalAnalysisService;
     private readonly priceMonitoringService;

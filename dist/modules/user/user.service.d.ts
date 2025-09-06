@@ -3,6 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserDocument } from './entities/user.entity';
 export declare class UserService {
     private userModel;
+    private cache;
     constructor(userModel: Model<UserDocument>);
     create(userData: CreateUserDto): Promise<UserDocument>;
     findAll(): Promise<UserDocument[]>;

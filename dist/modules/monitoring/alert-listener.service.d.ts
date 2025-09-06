@@ -1,5 +1,5 @@
 import { AlertCreatedEvent, AlertDeletedEvent, AlertUpdatedEvent } from '../alert';
-import { MonitoringService } from './monitoring.service';
+import { MonitoringService } from './services/monitoring.service';
 export declare class AlertListenerService {
     private readonly monitoringService;
     private readonly logger;

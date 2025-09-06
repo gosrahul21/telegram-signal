@@ -13,7 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlertListenerService = void 0;
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
-const monitoring_service_1 = require("./monitoring.service");
+const monitoring_service_1 = require("./services/monitoring.service");
 const eventsType_1 = require("../../utils/constants/eventsType");
 let AlertListenerService = AlertListenerService_1 = class AlertListenerService {
     constructor(monitoringService) {

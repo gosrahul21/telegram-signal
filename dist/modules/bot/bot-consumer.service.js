@@ -25,19 +25,20 @@ let BotNotificationListenerService = BotNotificationListenerService_1 = class Bo
         this.logger = new common_1.Logger(BotNotificationListenerService_1.name);
     }
     async handleNotificationCreated(payload) {
-        this.logger.log(`Bot received notification for user ${payload.userId}`);
+        const userId = payload.userId.toString();
+        this.logger.log(`Bot received notification for user ${userId}`);
         try {
-            const user = await this.userService.findById(payload.userId);
+            const user = await this.userService.findById(userId);
             if (!user || !user.telegramId) {
-                this.logger.warn(`User ${payload.userId} not found or no telegramId`);
+                this.logger.warn(`User ${userId} not found or no telegramId`);
                 return;
             }
             const message = this.formatNotificationMessage(payload);
             await this.botService.sendMessage(user.telegramId.toString(), message);
-            this.logger.log(`Telegram notification sent to user ${payload.userId} (telegramId: ${user.telegramId})`);
+            this.logger.log(`Telegram notification sent to user ${userId} (telegramId: ${user.telegramId})`);
         }
         catch (error) {
-            this.logger.error(`Failed to send Telegram notification to user ${payload.userId}:`, error);
+            this.logger.error(`Failed to send Telegram notification to user ${userId}:`, error);
         }
     }
     formatNotificationMessage(payload) {
@@ -81,8 +82,9 @@ let BotNotificationListenerService = BotNotificationListenerService_1 = class Bo
         return formattedMessage;
     }
     formatAlertMessage(payload) {
-        console.log('formatAlertMessage payload', payload);
-        const { type, data: { symbol, eventType, timeframe, alertId }, } = payload;
+        const { symbol, eventType, timeframe, alertId, data } = payload;
+        const alertData = data;
+        const { monitoring, triggerData } = alertData;
         let emoji = '🚨';
         let signal = 'ALERT';
         if ([
@@ -116,22 +118,51 @@ let BotNotificationListenerService = BotNotificationListenerService_1 = class Bo
             message += `🆔 <b>Alert ID:</b> ${alertId}\n`;
         }
         message += `\n`;
-        if (payload.price) {
-            message += `💰 <b>Current Price:</b> $${payload.price}\n`;
+        if (triggerData.currentPrice) {
+            message += `💰 <b>Current Price:</b> $${triggerData.currentPrice}\n`;
         }
-        if (payload.rsi) {
-            message += `📈 <b>RSI:</b> ${payload.rsi}\n`;
+        if (triggerData.rsiData?.rsi) {
+            message += `📈 <b>RSI:</b> ${triggerData.rsiData.rsi.toFixed(2)}\n`;
         }
-        if (payload.volume) {
-            message += `📊 <b>Volume:</b> ${payload.volume.toLocaleString()}\n`;
+        if (triggerData.bbData) {
+            message += `📊 <b>Bollinger Bands:</b>\n`;
+            message += `   • Upper: $${triggerData.bbData.upperBand.toFixed(2)}\n`;
+            message += `   • Middle: $${triggerData.bbData.middleBand.toFixed(2)}\n`;
+            message += `   • Lower: $${triggerData.bbData.lowerBand.toFixed(2)}\n`;
+        }
+        if (triggerData.emaData) {
+            message += `📈 <b>EMA Crossover:</b>\n`;
+            message += `   • Fast EMA: $${triggerData.emaData.fastEMA.toFixed(2)}\n`;
+            message += `   • Slow EMA: $${triggerData.emaData.slowEMA.toFixed(2)}\n`;
+            if (triggerData.emaData.crossover) {
+                message += `   • Crossover: ${triggerData.emaData.crossover}\n`;
+            }
+        }
+        if (triggerData.macdData) {
+            message += `📊 <b>MACD:</b>\n`;
+            message += `   • MACD: ${triggerData.macdData.macd.toFixed(4)}\n`;
+            message += `   • Signal: ${triggerData.macdData.signal.toFixed(4)}\n`;
+            message += `   • Histogram: ${triggerData.macdData.histogram.toFixed(4)}\n`;
         }
         message += `\n⏰ <b>Time:</b> ${new Date().toLocaleString()}\n\n`;
         message += `⚠️ <i>This is an automated alert. Please do your own research before trading.</i>`;
         return message;
     }
     formatOrderUpdateMessage(payload) {
-        const { orderId, symbol, status, side, quantity, price } = payload;
+        const { symbol, alertId, data } = payload;
+        const orderData = data;
+        const { orderId } = orderData;
         let emoji = '📋';
+        let status = 'updated';
+        let side = 'unknown';
+        let quantity = 'N/A';
+        let price = 'N/A';
+        if (data && typeof data === 'object') {
+            status = data.status || status;
+            side = data.side || side;
+            quantity = data.quantity || quantity;
+            price = data.price || price;
+        }
         if (status === 'filled')
             emoji = '✅';
         else if (status === 'cancelled')
@@ -141,7 +172,12 @@ let BotNotificationListenerService = BotNotificationListenerService_1 = class Bo
         else if (status === 'partially_filled')
             emoji = '🔄';
         let message = `${emoji} <b>Order Update - ${symbol}</b>\n\n`;
-        message += `🆔 <b>Order ID:</b> ${orderId}\n`;
+        if (orderId) {
+            message += `🆔 <b>Order ID:</b> ${orderId}\n`;
+        }
+        if (alertId) {
+            message += `🔔 <b>Alert ID:</b> ${alertId}\n`;
+        }
         message += `📊 <b>Status:</b> ${status.toUpperCase()}\n`;
         message += `📈 <b>Side:</b> ${side.toUpperCase()}\n`;
         message += `📦 <b>Quantity:</b> ${quantity}\n`;

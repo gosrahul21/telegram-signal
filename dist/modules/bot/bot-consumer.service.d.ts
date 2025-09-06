@@ -1,11 +1,12 @@
 import { BotService } from './bot.service';
 import { UserService } from '../user/user.service';
+import { NotificationCreatedPayload } from '../notification/types';
 export declare class BotNotificationListenerService {
     private readonly botService;
     private readonly userService;
     private readonly logger;
     constructor(botService: BotService, userService: UserService);
-    handleNotificationCreated(payload: any): Promise<void>;
+    handleNotificationCreated(payload: NotificationCreatedPayload): Promise<void>;
     private formatNotificationMessage;
     private formatGeneralNotificationMessage;
     private formatAlertMessage;
