@@ -36,13 +36,15 @@ let HealthService = class HealthService {
     startKeepAlive() {
         this.keepAliveInterval = setInterval(async () => {
             try {
-                const baseUrl = this.configService.get('BASE_URL') || 'https://telegram-signal-suva.onrender.com';
+                console.log('Making self request', this.configService.get('BASE_URL'));
+                const baseUrl = this.configService.get('BASE_URL') ||
+                    'https://telegram-signal-1.onrender.com';
                 await axios_1.default.get(`${baseUrl}/api/health/keep-alive`);
             }
             catch (error) {
                 console.log('Error on making self request:', error);
             }
-        }, 1000 * 60 * 10);
+        }, 1000);
     }
     onModuleDestroy() {
         if (this.keepAliveInterval) {

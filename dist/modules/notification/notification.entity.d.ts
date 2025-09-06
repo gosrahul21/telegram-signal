@@ -22,6 +22,7 @@ export declare enum NotificationPriority {
     CRITICAL = "critical"
 }
 export declare class Notification {
+    _id?: Types.ObjectId;
     uuid: string;
     userId: Types.ObjectId;
     type: NotificationType;
@@ -41,8 +42,8 @@ export declare class Notification {
     isPersistent: boolean;
     expiresAt?: Date;
 }
-export declare const NotificationSchema: import("mongoose").Schema<Notification, import("mongoose").Model<Notification, any, any, any, Document<unknown, any, Notification> & Notification & {
+export declare const NotificationSchema: import("mongoose").Schema<Notification, import("mongoose").Model<Notification, any, any, any, Document<unknown, any, Notification> & Notification & Required<{
     _id: Types.ObjectId;
-}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Notification, Document<unknown, {}, import("mongoose").FlatRecord<Notification>> & import("mongoose").FlatRecord<Notification> & {
+}>, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Notification, Document<unknown, {}, import("mongoose").FlatRecord<Notification>> & import("mongoose").FlatRecord<Notification> & Required<{
     _id: Types.ObjectId;
-}>;
+}>>;

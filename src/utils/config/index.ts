@@ -7,6 +7,8 @@ const RSI_OVERSOLD_THRESHOLD = 30;
 const RSI_EXTREME_OVERBOUGHT = 80;
 const RSI_EXTREME_OVERSOLD = 20;
 
+
+
 export default {
   ...env.parsed,
   UPSTOX_API_BASE: 'https://api.upstox.com/v3',

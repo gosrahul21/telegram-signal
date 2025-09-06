@@ -33,7 +33,9 @@ let NotificationService = NotificationService_1 = class NotificationService {
         });
         const savedNotification = await notification.save();
         this.logger.log(`Notification created for user ${savedNotification.userId}`);
-        this.emitNotification({ ...savedNotification.toObject() });
+        this.emitNotification({
+            ...savedNotification.toObject(),
+        });
         return savedNotification;
     }
     emitNotification(payload) {
@@ -232,7 +234,9 @@ let NotificationService = NotificationService_1 = class NotificationService {
             });
             createdCount = result.length;
             result.forEach((notification) => {
-                this.emitNotification({ ...notification.toObject() });
+                this.emitNotification({
+                    ...notification.toObject(),
+                });
             });
             this.logger.log(`Created ${createdCount} bulk notifications`);
         }
