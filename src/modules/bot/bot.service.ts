@@ -2,6 +2,9 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { Bot } from 'grammy';
 import { RegistrationTokenService } from '@/modules/auth/registration-token.service';
 import { UserService } from '@/modules/user/user.service';
+import { AlertService } from '../alert';
+import { MonitoringService } from '../monitoring/services/monitoring.service';
+import { PriceMonitoringService } from '../monitoring/price-monitoring.service';
 
 @Injectable()
 export class BotService implements OnModuleInit {
@@ -9,6 +12,9 @@ export class BotService implements OnModuleInit {
 
   constructor(
     private registrationTokenService: RegistrationTokenService,
+    private alertService: AlertService,
+    private monitoringService: MonitoringService,
+    private priceMonitoringService: PriceMonitoringService,
     private userService: UserService,
   ) {
     this.bot = new Bot(process.env.BOT_TOKEN || '');
@@ -53,7 +59,85 @@ export class BotService implements OnModuleInit {
     this.bot.command('unsubscribe', async (ctx) => {
       await this.handleUnsubscribeCommand(ctx);
     });
+
+    this.bot.command('status', async (ctx) => {
+      await this.handleStatusCommand(ctx);
+    });
   }
+
+  private async handleStatusCommand(ctx: any) {
+    try {
+      const telegramId = ctx.from.id;
+      const user = await this.userService.findByTelegramId(telegramId);
+      
+      if (!user) {
+        await ctx.reply('You need to register first! Use /start to begin registration.');
+        return;
+      }
+
+      // Get user's alerts
+      const userAlerts = await this.alertService.findByUserId(user._id.toString());
+      const activeAlerts = userAlerts.filter(alert => alert.isActive);
+      
+      // Get monitoring status
+      const monitoringStatus = await this.monitoringService.getMonitoringStatus();
+      const allMonitorings = await this.monitoringService.getAllMonitorings();
+      
+      // Get current prices for user's symbols
+      const symbols = [...new Set(activeAlerts.map(alert => alert.symbol))];
+      const priceData = {};
+      
+      for (const symbol of symbols.slice(0, 5)) { // Limit to 5 symbols to avoid long messages
+        try {
+          priceData[symbol] = await this.priceMonitoringService.getCurrentPrice(symbol);
+        } catch (error) {
+          priceData[symbol] = 'N/A';
+        }
+      }
+ // Format status message
+ let statusMessage = `📊 <b>Your Trading Status</b>\n\n`;
+ statusMessage += `👤 <b>User:</b> ${user.username}\n`;
+ statusMessage += `🔗 <b>Telegram:</b> Linked\n\n`;
+ 
+ statusMessage += `🚨 <b>Active Alerts:</b> ${activeAlerts.length}\n`;
+ statusMessage += `📈 <b>Total Alerts:</b> ${userAlerts.length}\n`;
+ statusMessage += `⚙️ <b>Monitoring Status:</b> ${monitoringStatus.status}\n`;
+ statusMessage += `🔄 <b>Active Monitors:</b> ${monitoringStatus.active}\n\n`;
+
+ if (activeAlerts.length > 0) {
+   statusMessage += `📋 <b>Your Active Alerts:</b>\n`;
+   activeAlerts.slice(0, 5).forEach((alert, index) => {
+     statusMessage += `${index + 1}. ${alert.symbol} - ${alert.eventType} (${alert.timeframe})\n`;
+   });
+   
+   if (activeAlerts.length > 5) {
+     statusMessage += `... and ${activeAlerts.length - 5} more\n`;
+   }
+   statusMessage += '\n';
+ }
+
+ if (symbols.length > 0) {
+   statusMessage += `💰 <b>Current Prices:</b>\n`;
+   symbols.slice(0, 5).forEach(symbol => {
+     const price = priceData[symbol];
+     statusMessage += `• ${symbol}: ${typeof price === 'number' ? `$${price.toFixed(2)}` : price}\n`;
+   });
+   
+   if (symbols.length > 5) {
+     statusMessage += `... and ${symbols.length - 5} more symbols\n`;
+   }
+ }
+ statusMessage += `\n⏰ <b>Last Updated:</b> ${new Date().toLocaleString()}\n`;
+ statusMessage += `\n💡 Use /help to see available commands`;
+
+ await ctx.reply(statusMessage);
+ 
+} catch (error) {
+ console.error('Error in status command:', error);
+ await ctx.reply('Sorry, there was an error getting your status. Please try again later.');
+}
+}
+
 
   private async handleStartCommand(ctx: any) {
     try {
@@ -90,7 +174,7 @@ export class BotService implements OnModuleInit {
           `To complete your registration, please visit this link:\n\n` +
           `${registrationUrl}\n\n` +
           `⚠️ This link expires in 1 hour.\n` +
-          `🔐 You'll need to choose a username and password.\n\n` +
+          `🔐 You'll need to create account with username and password.\n\n` +
           `After registration, you can:\n` +
           `• Subscribe to crypto signals\n` +
           `• Get real-time alerts\n` +

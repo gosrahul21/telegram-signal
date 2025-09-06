@@ -51,7 +51,7 @@ export declare class AuthService {
         success: boolean;
         message: string;
         user: {
-            id: any;
+            id: import("mongoose").Types.ObjectId;
             username: string;
             telegramId: number;
             chatId: number;

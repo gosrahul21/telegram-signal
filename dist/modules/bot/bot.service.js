@@ -14,9 +14,15 @@ const common_1 = require("@nestjs/common");
 const grammy_1 = require("grammy");
 const registration_token_service_1 = require("../auth/registration-token.service");
 const user_service_1 = require("../user/user.service");
+const alert_1 = require("../alert");
+const monitoring_service_1 = require("../monitoring/services/monitoring.service");
+const price_monitoring_service_1 = require("../monitoring/price-monitoring.service");
 let BotService = class BotService {
-    constructor(registrationTokenService, userService) {
+    constructor(registrationTokenService, alertService, monitoringService, priceMonitoringService, userService) {
         this.registrationTokenService = registrationTokenService;
+        this.alertService = alertService;
+        this.monitoringService = monitoringService;
+        this.priceMonitoringService = priceMonitoringService;
         this.userService = userService;
         this.bot = new grammy_1.Bot(process.env.BOT_TOKEN || '');
         this.setupCommands();
@@ -48,6 +54,67 @@ let BotService = class BotService {
         this.bot.command('unsubscribe', async (ctx) => {
             await this.handleUnsubscribeCommand(ctx);
         });
+        this.bot.command('status', async (ctx) => {
+            await this.handleStatusCommand(ctx);
+        });
+    }
+    async handleStatusCommand(ctx) {
+        try {
+            const telegramId = ctx.from.id;
+            const user = await this.userService.findByTelegramId(telegramId);
+            if (!user) {
+                await ctx.reply('You need to register first! Use /start to begin registration.');
+                return;
+            }
+            const userAlerts = await this.alertService.findByUserId(user._id.toString());
+            const activeAlerts = userAlerts.filter(alert => alert.isActive);
+            const monitoringStatus = await this.monitoringService.getMonitoringStatus();
+            const allMonitorings = await this.monitoringService.getAllMonitorings();
+            const symbols = [...new Set(activeAlerts.map(alert => alert.symbol))];
+            const priceData = {};
+            for (const symbol of symbols.slice(0, 5)) {
+                try {
+                    priceData[symbol] = await this.priceMonitoringService.getCurrentPrice(symbol);
+                }
+                catch (error) {
+                    priceData[symbol] = 'N/A';
+                }
+            }
+            let statusMessage = `📊 <b>Your Trading Status</b>\n\n`;
+            statusMessage += `👤 <b>User:</b> ${user.username}\n`;
+            statusMessage += `🔗 <b>Telegram:</b> Linked\n\n`;
+            statusMessage += `🚨 <b>Active Alerts:</b> ${activeAlerts.length}\n`;
+            statusMessage += `📈 <b>Total Alerts:</b> ${userAlerts.length}\n`;
+            statusMessage += `⚙️ <b>Monitoring Status:</b> ${monitoringStatus.status}\n`;
+            statusMessage += `🔄 <b>Active Monitors:</b> ${monitoringStatus.active}\n\n`;
+            if (activeAlerts.length > 0) {
+                statusMessage += `📋 <b>Your Active Alerts:</b>\n`;
+                activeAlerts.slice(0, 5).forEach((alert, index) => {
+                    statusMessage += `${index + 1}. ${alert.symbol} - ${alert.eventType} (${alert.timeframe})\n`;
+                });
+                if (activeAlerts.length > 5) {
+                    statusMessage += `... and ${activeAlerts.length - 5} more\n`;
+                }
+                statusMessage += '\n';
+            }
+            if (symbols.length > 0) {
+                statusMessage += `💰 <b>Current Prices:</b>\n`;
+                symbols.slice(0, 5).forEach(symbol => {
+                    const price = priceData[symbol];
+                    statusMessage += `• ${symbol}: ${typeof price === 'number' ? `$${price.toFixed(2)}` : price}\n`;
+                });
+                if (symbols.length > 5) {
+                    statusMessage += `... and ${symbols.length - 5} more symbols\n`;
+                }
+            }
+            statusMessage += `\n⏰ <b>Last Updated:</b> ${new Date().toLocaleString()}\n`;
+            statusMessage += `\n💡 Use /help to see available commands`;
+            await ctx.reply(statusMessage);
+        }
+        catch (error) {
+            console.error('Error in status command:', error);
+            await ctx.reply('Sorry, there was an error getting your status. Please try again later.');
+        }
     }
     async handleStartCommand(ctx) {
         try {
@@ -69,7 +136,7 @@ let BotService = class BotService {
                 `To complete your registration, please visit this link:\n\n` +
                 `${registrationUrl}\n\n` +
                 `⚠️ This link expires in 1 hour.\n` +
-                `🔐 You'll need to choose a username and password.\n\n` +
+                `🔐 You'll need to create account with username and password.\n\n` +
                 `After registration, you can:\n` +
                 `• Subscribe to crypto signals\n` +
                 `• Get real-time alerts\n` +
@@ -214,6 +281,9 @@ exports.BotService = BotService;
 exports.BotService = BotService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [registration_token_service_1.RegistrationTokenService,
+        alert_1.AlertService,
+        monitoring_service_1.MonitoringService,
+        price_monitoring_service_1.PriceMonitoringService,
         user_service_1.UserService])
 ], BotService);
 //# sourceMappingURL=bot.service.js.map
