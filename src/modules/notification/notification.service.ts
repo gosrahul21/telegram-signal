@@ -46,7 +46,7 @@ export class NotificationService {
 
     // Emit notification created event
 
-    this.emitNotification({ ...savedNotification.toObject() } as NotificationCreatedPayload);
+    this.emitNotification({ ...savedNotification.toObject() } as any);
     return savedNotification;
   }
 
@@ -407,7 +407,7 @@ export class NotificationService {
 
       // Emit events for each created notification
       result.forEach((notification) => {
-        this.emitNotification({ ...notification.toObject() } as NotificationCreatedPayload);
+        this.emitNotification({ ...notification.toObject() } as any);
       });
 
       this.logger.log(`Created ${createdCount} bulk notifications`);
