@@ -1,4 +1,4 @@
-import { MonitorEventType, Timeframe } from '../alert';
+import { MonitorEventType, Timeframe } from '@/modules/alert';
 export declare class Monitoring {
     symbol: string;
     timeframe: Timeframe;

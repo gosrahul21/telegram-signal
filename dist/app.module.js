@@ -16,9 +16,9 @@ const user_module_1 = require("./modules/user/user.module");
 const mongoose_1 = require("@nestjs/mongoose");
 const socket_module_1 = require("./modules/socket/socket.module");
 const alert_module_1 = require("./modules/alert/alert.module");
-const monitoring_module_1 = require("./modules/monitoring/services/monitoring.module");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const bot_module_1 = require("./modules/bot/bot.module");
+const monitoring_module_1 = require("./modules/monitoring/monitoring.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;

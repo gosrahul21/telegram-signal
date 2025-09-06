@@ -1,5 +1,6 @@
+import { MonitorEventType, Timeframe } from '@/modules/alert';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { MonitorEventType, Timeframe } from '../alert';
+
 
 @Schema({ timestamps: true })
 export class Monitoring {

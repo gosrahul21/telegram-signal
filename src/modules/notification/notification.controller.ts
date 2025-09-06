@@ -28,120 +28,68 @@ export class NotificationController {
     // private readonly socketGateway: SocketGateway,
   ) {}
 
-  @Post('test/sample-alert')
-  @UseGuards(JwtAuthGuard)
-  async sendSampleAlert(
-    @Body() payload: { userId?: string; symbol?: string },
-    @Request() req,
-  ) {
-    const userId = req.user.id;
-    console.log('userId', userId, req.user);
-    try {
-      const sampleAlert = {
-        type: NotificationType.ALERT_TRIGGERED,
-        data: {
-          alertId: 'alert_' + Date.now(),
-          symbol: payload.symbol || 'BTCUSDT',
-          eventType: MonitorEventType.RSI_CROSSOVER_HIGH,
-          message: 'RSI overbought alert triggered - BTC price is above 70 RSI',
-          timestamp: new Date(),
-          price: 43500.5,
-          rsi: 72.5,
-          volume: 1250000,
-          timeframe: '1h',
-          priority: 'high',
-          metadata: {
-            source: 'technical_analysis',
-            confidence: 0.85,
-            recommendation: 'Consider taking profits or setting stop-loss',
-          },
-        },
-      };
+  // @Post('test/sample-alert')
+  // @UseGuards(JwtAuthGuard)
+  // async sendSampleAlert(
+  //   @Body() payload: { userId?: string; symbol?: string },
+  //   @Request() req,
+  // ) {
+  //   const userId = req.user.id;
+  //   console.log('userId', userId, req.user);
+  //   try {
+  //     const sampleAlert = {
+  //       type: NotificationType.ALERT_TRIGGERED,
+  //       data: {
+  //         alertId: 'alert_' + Date.now(),
+  //         symbol: payload.symbol || 'BTCUSDT',
+  //         eventType: MonitorEventType.RSI_CROSSOVER_HIGH,
+  //         message: 'RSI overbought alert triggered - BTC price is above 70 RSI',
+  //         timestamp: new Date(),
+  //         price: 43500.5,
+  //         rsi: 72.5,
+  //         volume: 1250000,
+  //         timeframe: '1h',
+  //         priority: 'high',
+  //         metadata: {
+  //           source: 'technical_analysis',
+  //           confidence: 0.85,
+  //           recommendation: 'Consider taking profits or setting stop-loss',
+  //         },
+  //       },
+  //     };
 
-      // If userId is provided, send to specific user, otherwise broadcast to all
-      if (userId) {
-        this.notificationService.emitNotification({
-          ...sampleAlert,
-          userId: userId,
-        });
-        return {
-          success: true,
-          message: 'Sample alert sent to user',
-          userId: userId,
-          alert: sampleAlert,
-        };
-      } else {
-        // Broadcast to all connected users
-        // this.notificationService.emitNotification(sampleAlert);
-        return {
-          success: true,
-          message: 'Sample alert broadcasted to all users',
-          alert: sampleAlert,
-        };
-      }
-    } catch (error) {
-      console.error('Error sending sample alert:', error);
-      return {
-        success: false,
-        message: 'Failed to send sample alert',
-        error: error.message,
-      };
-    }
-  }
+  //     // If userId is provided, send to specific user, otherwise broadcast to all
+  //     if (userId) {
+  //       this.notificationService.emitNotification({
+  //         ...sampleAlert,
+  //         userId: userId,
+  //       });
+  //       return {
+  //         success: true,
+  //         message: 'Sample alert sent to user',
+  //         userId: userId,
+  //         alert: sampleAlert,
+  //       };
+  //     } else {
+  //       // Broadcast to all connected users
+  //       // this.notificationService.emitNotification(sampleAlert);
+  //       return {
+  //         success: true,
+  //         message: 'Sample alert broadcasted to all users',
+  //         alert: sampleAlert,
+  //       };
+  //     }
+  //   } catch (error) {
+  //     console.error('Error sending sample alert:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Failed to send sample alert',
+  //       error: error.message,
+  //     };
+  //   }
+  // }
 
-  @Post('test/price-alert')
-  @UseGuards(JwtAuthGuard)
-  async sendPriceAlert(
-    @Body() payload: { userId?: string; symbol?: string; price?: number },
-  ) {
-    try {
-      const priceAlert = {
-        type: 'price_alert',
-        data: {
-          alertId: 'price_' + Date.now(),
-          symbol: payload.symbol || 'ETHUSDT',
-          eventType: 'PRICE_ABOVE',
-          message: `Price alert: ${payload.symbol || 'ETHUSDT'} is above $${payload.price || 3200}`,
-          timestamp: new Date(),
-          currentPrice: payload.price || 3250.75,
-          targetPrice: payload.price || 3200,
-          change: '+2.5%',
-          volume: 850000,
-          timeframe: '15m',
-          priority: 'medium',
-          metadata: {
-            source: 'price_monitoring',
-            confidence: 0.95,
-            trend: 'bullish',
-          },
-        },
-      };
 
-      if (payload.userId) {
-        this.notificationService.emitNotification(priceAlert);
-        return {
-          success: true,
-          message: 'Price alert sent to user',
-          userId: payload.userId,
-          alert: priceAlert,
-        };
-      } else {
-        this.notificationService.emitNotification(priceAlert);
-        return {
-          success: true,
-          message: 'Price alert broadcasted to all users',
-          alert: priceAlert,
-        };
-      }
-    } catch (error) {
-      console.error('Error sending price alert:', error);
-      return {
-        success: false,
-        message: 'Failed to send price alert',
-        error: error.message,
-      };
-    }
-  }
 
   // @Post('test/order-update')
   // @UseGuards(JwtAuthGuard)
