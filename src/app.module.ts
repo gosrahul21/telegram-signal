@@ -23,7 +23,7 @@ import { MonitoringModule } from '@/modules/monitoring/monitoring.module';
     ScheduleModule.forRoot(),
     HealthModule,
     EventEmitterModule.forRoot(),
-    // BotModule,
+    BotModule,
     NotificationModule,
     AuthModule,
     UserModule,
