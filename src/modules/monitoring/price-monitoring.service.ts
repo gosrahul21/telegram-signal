@@ -264,8 +264,8 @@ export class PriceMonitoringService {
       
       const data = response;
       
-      if (data[symbol.toLowerCase()]?.usd) {
-        return data[symbol.toLowerCase()].usd;
+      if (data.price) {
+        return data.price;
       }
       
       throw new Error('Invalid response from price API');

@@ -13,12 +13,14 @@ const config_1 = require("@nestjs/config");
 const user_1 = require("../user");
 const auth_1 = require("../auth");
 const bot_consumer_service_1 = require("./bot-consumer.service");
+const alert_1 = require("../alert");
+const monitoring_module_1 = require("../monitoring/monitoring.module");
 let BotModule = class BotModule {
 };
 exports.BotModule = BotModule;
 exports.BotModule = BotModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_1.AuthModule, user_1.UserModule, config_1.ConfigModule],
+        imports: [auth_1.AuthModule, user_1.UserModule, alert_1.AlertModule, monitoring_module_1.MonitoringModule, config_1.ConfigModule],
         providers: [bot_service_1.BotService, bot_consumer_service_1.BotNotificationListenerService],
         exports: [bot_service_1.BotService, bot_consumer_service_1.BotNotificationListenerService],
     })

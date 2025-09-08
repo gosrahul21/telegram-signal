@@ -38,13 +38,13 @@ let HealthService = class HealthService {
             try {
                 console.log('Making self request', this.configService.get('BASE_URL'));
                 const baseUrl = this.configService.get('BASE_URL') ||
-                    'https://telegram-signal-1.onrender.com';
+                    'http://locahost:3000';
                 await axios_1.default.get(`${baseUrl}/api/health/keep-alive`);
             }
             catch (error) {
                 console.log('Error on making self request:', error);
             }
-        }, 1000);
+        }, 1000 * 60 * 10);
     }
     onModuleDestroy() {
         if (this.keepAliveInterval) {
