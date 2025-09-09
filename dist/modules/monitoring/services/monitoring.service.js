@@ -32,9 +32,15 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
         this.logger = new common_1.Logger(MonitoringService_1.name);
         this.monitorings = [];
     }
-    onModuleInit() {
+    async onModuleInit() {
         this.logger.log('Monitoring service initialized');
         this.loadMonitorings();
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        setInterval(async () => {
+            this.logger.log('Monitoring BTCUSDT - 15m - RSI_CROSSOVER_HIGH');
+            const conditionMet = await this.monitor({ symbol: 'BTCUSDT', timeframe: alert_1.Timeframe.ONE_HOUR, eventType: alert_1.MonitorEventType.RSI_CROSSOVER_HIGH, count: 'INFINITE' });
+            this.logger.log('Condition met:', conditionMet);
+        }, 5000);
     }
     async loadMonitorings() {
         try {
@@ -97,51 +103,57 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
             this.logger.log(`Stopped monitoring ${symbol} - ${eventType} - ${timeframe}`);
         }
     }
+    async monitor(monitoring) {
+        const { symbol, timeframe, eventType } = monitoring;
+        try {
+            let conditionMet = false;
+            let triggerData = {};
+            switch (eventType) {
+                case alert_1.MonitorEventType.BOLLINGER_BANDS_HIGH:
+                case alert_1.MonitorEventType.BOLLINGER_BANDS_LOW: {
+                    const bbData = await this.technicalAnalysisService.getBollingerBands(symbol, timeframe);
+                    const currentPrice = await this.priceMonitoringService.getCurrentPrice(symbol);
+                    conditionMet = this.checkBollingerBandsCondition(currentPrice, bbData, eventType);
+                    triggerData = { currentPrice, bbData };
+                    break;
+                }
+                case alert_1.MonitorEventType.EMA_LOW:
+                case alert_1.MonitorEventType.EMA_HIGH: {
+                    const emaData = await this.technicalAnalysisService.getEMACrossover(symbol, timeframe);
+                    conditionMet = this.checkEMACrossoverCondition(emaData, eventType);
+                    triggerData = { emaData };
+                    break;
+                }
+                case alert_1.MonitorEventType.RSI_LOW:
+                case alert_1.MonitorEventType.RSI_CROSSOVER_HIGH: {
+                    const rsiData = await this.technicalAnalysisService.getRSI(symbol, timeframe);
+                    conditionMet = this.checkRSICondition(rsiData, eventType === alert_1.MonitorEventType.RSI_LOW ? 30 : 70, eventType);
+                    triggerData = { rsiData };
+                    break;
+                }
+                case alert_1.MonitorEventType.MACD_CROSSOVER_LOW:
+                case alert_1.MonitorEventType.MACD_CROSSOVER_HIGH: {
+                    const macdData = await this.technicalAnalysisService.getMACD(symbol, timeframe);
+                    conditionMet = this.checkMACDCondition(macdData, eventType);
+                    triggerData = { macdData };
+                    break;
+                }
+            }
+            console.log("monitoring completed", { symbol, timeframe, eventType, conditionMet, triggerData });
+            return conditionMet;
+            if (conditionMet) {
+                await this.triggerAlert(monitoring, triggerData);
+            }
+        }
+        catch (error) {
+            this.logger.error(`Error in monitoring for ${symbol} - ${eventType}:`, error);
+        }
+    }
     startMonitoringByType(monitoring) {
         const { symbol, timeframe, eventType } = monitoring;
         this.logger.log(`Starting monitoring for ${symbol} - ${eventType} - ${timeframe}`);
         const interval = setInterval(async () => {
-            try {
-                let conditionMet = false;
-                let triggerData = {};
-                switch (eventType) {
-                    case alert_1.MonitorEventType.BOLLINGER_BANDS_HIGH:
-                    case alert_1.MonitorEventType.BOLLINGER_BANDS_LOW: {
-                        const bbData = await this.technicalAnalysisService.getBollingerBands(symbol, timeframe);
-                        const currentPrice = await this.priceMonitoringService.getCurrentPrice(symbol);
-                        conditionMet = this.checkBollingerBandsCondition(currentPrice, bbData, eventType);
-                        triggerData = { currentPrice, bbData };
-                        break;
-                    }
-                    case alert_1.MonitorEventType.EMA_LOW:
-                    case alert_1.MonitorEventType.EMA_HIGH: {
-                        const emaData = await this.technicalAnalysisService.getEMACrossover(symbol, timeframe);
-                        conditionMet = this.checkEMACrossoverCondition(emaData, eventType);
-                        triggerData = { emaData };
-                        break;
-                    }
-                    case alert_1.MonitorEventType.RSI_LOW:
-                    case alert_1.MonitorEventType.RSI_CROSSOVER_HIGH: {
-                        const rsiData = await this.technicalAnalysisService.getRSI(symbol, timeframe);
-                        conditionMet = this.checkRSICondition(rsiData, eventType === alert_1.MonitorEventType.RSI_LOW ? 30 : 70, eventType);
-                        triggerData = { rsiData };
-                        break;
-                    }
-                    case alert_1.MonitorEventType.MACD_CROSSOVER_LOW:
-                    case alert_1.MonitorEventType.MACD_CROSSOVER_HIGH: {
-                        const macdData = await this.technicalAnalysisService.getMACD(symbol, timeframe);
-                        conditionMet = this.checkMACDCondition(macdData, eventType);
-                        triggerData = { macdData };
-                        break;
-                    }
-                }
-                if (conditionMet) {
-                    await this.triggerAlert(monitoring, triggerData);
-                }
-            }
-            catch (error) {
-                this.logger.error(`Error in monitoring for ${symbol} - ${eventType}:`, error);
-            }
+            this.monitor(monitoring);
         }, this.getMonitoringInterval(timeframe));
         return interval;
     }
@@ -172,11 +184,11 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
         const intervals = {
             '1m': 30 * 1000,
             '5m': 60 * 1000,
-            '15m': 2 * 60 * 1000,
-            '30m': 5 * 60 * 1000,
-            '1h': 10 * 60 * 1000,
-            '4h': 30 * 60 * 1000,
-            '1d': 2 * 60 * 60 * 1000,
+            '15m': 5 * 60 * 1000,
+            '30m': 15 * 60 * 1000,
+            '1h': 20 * 60 * 1000,
+            '4h': 1 * 60 * 1000,
+            '1d': 4 * 60 * 60 * 1000,
         };
         return intervals[timeframe] || 60 * 1000;
     }

@@ -1,15 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 
+export interface BinanceCandleData {
+  openTime: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  closeTime: string;
+}
+
 @Injectable()
 export class BinancePriceApiService {
   constructor() {}
 
-  async fetchBinanceCandleData(symbol: string, interval: string) {
+  async fetchBinanceCandleData(symbol: string, interval: string): Promise<BinanceCandleData[]> {
     try {
       const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}`;
       const response = await axios.get(url);
-      return response.data.map((candle: any) => ({
+      return response.data.map((candle: string[]) => ({
         openTime: candle[0],
         open: parseFloat(candle[1]),
         high: parseFloat(candle[2]),

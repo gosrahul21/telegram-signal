@@ -80,7 +80,7 @@ export class TechnicalAnalysisService {
     stdDev: number = 2,
   ): Promise<BollingerBandsResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(
+      const prices: number[] = await this.priceMonitoringService.getHistoricalPrices(
         symbol,
         timeframe,
         period + 1,
@@ -125,7 +125,7 @@ export class TechnicalAnalysisService {
     slowPeriod: number = 26,
   ): Promise<EMACrossoverResult> {
     try {
-      const prices = await this.priceMonitoringService.getHistoricalPrices(
+      const prices: number[] = await this.priceMonitoringService.getHistoricalPrices(
         symbol,
         timeframe,
         Math.max(fastPeriod, slowPeriod) + 1,
@@ -323,41 +323,41 @@ export class TechnicalAnalysisService {
     }
   }
 
-  async getVolumeAnalysis(
-    symbol: string,
-    timeframe: string,
-    period: number = 20,
-  ): Promise<VolumeAnalysisResult> {
-    try {
-      const volumeData = await this.priceMonitoringService.getHistoricalVolumes(
-        symbol,
-        timeframe,
-        period,
-      );
+  // async getVolumeAnalysis(
+  //   symbol: string,
+  //   timeframe: string,
+  //   period: number = 20,
+  // ): Promise<VolumeAnalysisResult> {
+  //   try {
+  //     const volumeData = await this.priceMonitoringService.getHistoricalVolumes(
+  //       symbol,
+  //       timeframe,
+  //       period,
+  //     );
 
-      if (volumeData.length < period) {
-        throw new Error(`Insufficient volume data for analysis`);
-      }
+  //     if (volumeData.length < period) {
+  //       throw new Error(`Insufficient volume data for analysis`);
+  //     }
 
-      const avgVolume = this.calculateSMA(volumeData, period);
-      const currentVolume = volumeData[volumeData.length - 1];
-      const volumeRatio = currentVolume / avgVolume;
+  //     const avgVolume = this.calculateSMA(volumeData, period);
+  //     const currentVolume = volumeData[volumeData.length - 1];
+  //     const volumeRatio = currentVolume / avgVolume;
 
-      return {
-        currentVolume,
-        avgVolume,
-        volumeRatio,
-        period,
-        timestamp: new Date(),
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error calculating volume analysis for ${symbol}:`,
-        error,
-      );
-      throw error;
-    }
-  }
+  //     return {
+  //       currentVolume,
+  //       avgVolume,
+  //       volumeRatio,
+  //       period,
+  //       timestamp: new Date(),
+  //     };
+  //   } catch (error) {
+  //     this.logger.error(
+  //       `Error calculating volume analysis for ${symbol}:`,
+  //       error,
+  //     );
+  //     throw error;
+  //   }
+  // }
 
   async getPriceAction(
     symbol: string,

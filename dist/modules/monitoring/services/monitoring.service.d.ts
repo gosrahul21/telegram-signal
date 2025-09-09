@@ -14,11 +14,12 @@ export declare class MonitoringService implements OnModuleInit, OnModuleDestroy 
     private readonly logger;
     private monitorings;
     constructor(technicalAnalysisService: TechnicalAnalysisService, priceMonitoringService: PriceMonitoringService, eventEmitter: EventEmitter2, monitoringModel: Model<MonitoringDocument>);
-    onModuleInit(): void;
+    onModuleInit(): Promise<void>;
     loadMonitorings(): Promise<void>;
     onModuleDestroy(): void;
     addMonitoring(monitoring: CreateMonitoringDto): Promise<void>;
     removeMonitoring(symbol: string, timeframe: string, eventType: MonitorEventType): Promise<void>;
+    monitor(monitoring: Monitoring): Promise<boolean>;
     private startMonitoringByType;
     private triggerAlert;
     private getMonitoringInterval;

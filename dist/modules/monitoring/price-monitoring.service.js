@@ -56,40 +56,16 @@ let PriceMonitoringService = PriceMonitoringService_1 = class PriceMonitoringSer
             }
             const prices = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
             this.historicalCache.set(cacheKey, {
-                data: prices,
+                data: prices.map((candle) => candle.close),
                 timestamp: Date.now(),
             });
-            return prices;
+            return prices.map((candle) => candle.close);
         }
         catch (error) {
             this.logger.error(`Error fetching historical prices for ${symbol}:`, error);
             const cached = this.historicalCache.get(`${symbol}_${timeframe}_${limit}`);
             if (cached) {
                 this.logger.warn(`Using cached historical data for ${symbol}`);
-                return cached.data;
-            }
-            throw error;
-        }
-    }
-    async getHistoricalVolumes(symbol, timeframe, limit = 100) {
-        try {
-            const cacheKey = `volume_${symbol}_${timeframe}_${limit}`;
-            const cached = this.historicalCache.get(cacheKey);
-            if (cached && Date.now() - cached.timestamp < this.HISTORICAL_CACHE_DURATION) {
-                return cached.data;
-            }
-            const volumes = await this.fetchHistoricalVolumesFromAPI(symbol, timeframe, limit);
-            this.historicalCache.set(cacheKey, {
-                data: volumes,
-                timestamp: Date.now(),
-            });
-            return volumes;
-        }
-        catch (error) {
-            this.logger.error(`Error fetching historical volumes for ${symbol}:`, error);
-            const cached = this.historicalCache.get(`volume_${symbol}_${timeframe}_${limit}`);
-            if (cached) {
-                this.logger.warn(`Using cached volume data for ${symbol}`);
                 return cached.data;
             }
             throw error;
@@ -208,20 +184,6 @@ let PriceMonitoringService = PriceMonitoringService_1 = class PriceMonitoringSer
         catch (error) {
             this.logger.error(`API error for ${symbol}:`, error);
             return this.getMockPrice(symbol);
-        }
-    }
-    async fetchHistoricalVolumesFromAPI(symbol, timeframe, limit) {
-        try {
-            const response = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
-            const data = response;
-            if (data.total_volumes && Array.isArray(data.total_volumes)) {
-                return data.total_volumes.slice(-limit).map((volume) => volume[1]);
-            }
-            throw new Error('Invalid response from historical volume API');
-        }
-        catch (error) {
-            this.logger.error(`API error for historical volumes ${symbol}:`, error);
-            return this.getMockHistoricalVolumes(limit);
         }
     }
     timeframeToDays(timeframe) {

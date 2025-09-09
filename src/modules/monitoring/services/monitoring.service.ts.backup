@@ -36,6 +36,14 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     this.logger.log('Monitoring service initialized');
     this.loadMonitorings();
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    setInterval(async () => {
+      this.logger.log('Monitoring BTCUSDT - 15m - RSI_CROSSOVER_HIGH');
+      const conditionMet = await this.monitor({symbol: 'BTCUSDT', timeframe: Timeframe.ONE_HOUR, eventType: MonitorEventType.RSI_CROSSOVER_HIGH, count: 'INFINITE'} as any);
+      this.logger.log('Condition met:', conditionMet);
+    }, 5000);
   }
 
   async loadMonitorings() {
@@ -189,7 +197,6 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
             break;
           }
         }
-        console.log("monitoring completed", {symbol, timeframe, eventType, conditionMet, triggerData});
         return conditionMet;
         if (conditionMet) {
           await this.triggerAlert(monitoring, triggerData);

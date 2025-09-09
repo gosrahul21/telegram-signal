@@ -65,7 +65,6 @@ export declare class TechnicalAnalysisService {
     getRSI(symbol: string, timeframe: string, period?: number): Promise<RSIResult>;
     getMACD(symbol: string, timeframe: string, fastPeriod?: number, slowPeriod?: number, signalPeriod?: number): Promise<MACDResult>;
     getStochastic(symbol: string, timeframe: string, kPeriod?: number, dPeriod?: number): Promise<StochasticResult>;
-    getVolumeAnalysis(symbol: string, timeframe: string, period?: number): Promise<VolumeAnalysisResult>;
     getPriceAction(symbol: string, timeframe: string, period?: number): Promise<PriceActionResult>;
     private calculateSMA;
     private calculateEMA;

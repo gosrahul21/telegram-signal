@@ -165,28 +165,6 @@ let TechnicalAnalysisService = TechnicalAnalysisService_1 = class TechnicalAnaly
             throw error;
         }
     }
-    async getVolumeAnalysis(symbol, timeframe, period = 20) {
-        try {
-            const volumeData = await this.priceMonitoringService.getHistoricalVolumes(symbol, timeframe, period);
-            if (volumeData.length < period) {
-                throw new Error(`Insufficient volume data for analysis`);
-            }
-            const avgVolume = this.calculateSMA(volumeData, period);
-            const currentVolume = volumeData[volumeData.length - 1];
-            const volumeRatio = currentVolume / avgVolume;
-            return {
-                currentVolume,
-                avgVolume,
-                volumeRatio,
-                period,
-                timestamp: new Date(),
-            };
-        }
-        catch (error) {
-            this.logger.error(`Error calculating volume analysis for ${symbol}:`, error);
-            throw error;
-        }
-    }
     async getPriceAction(symbol, timeframe, period = 5) {
         try {
             const prices = await this.priceMonitoringService.getHistoricalPrices(symbol, timeframe, period + 1);

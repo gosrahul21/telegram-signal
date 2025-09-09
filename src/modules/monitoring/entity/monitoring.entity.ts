@@ -17,7 +17,7 @@ export class Monitoring {
   @Prop({ required: true, type: String })
   count: string | 'INFINITE'; // number type string for infinite monitoring
 
-  monitoringInterval: NodeJS.Timeout;
+  monitoringInterval: NodeJS.Timeout; // internal interval reference for monitoring
 }
 
 

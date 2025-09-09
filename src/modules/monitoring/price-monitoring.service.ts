@@ -13,7 +13,8 @@ export class PriceMonitoringService {
   constructor(
     private readonly configService: ConfigService,
     private readonly binancePriceApiService: BinancePriceApiService,
-  ) {}
+  ) {
+  }
 
   async getCurrentPrice(symbol: string): Promise<number> {
     try {
@@ -62,11 +63,11 @@ export class PriceMonitoringService {
       
       // Update cache
       this.historicalCache.set(cacheKey, {
-        data: prices,
+        data: prices.map((candle) => candle.close),
         timestamp: Date.now(),
       });
 
-      return prices;
+      return prices.map((candle) => candle.close);
     } catch (error) {
       this.logger.error(`Error fetching historical prices for ${symbol}:`, error);
       
@@ -81,39 +82,39 @@ export class PriceMonitoringService {
     }
   }
 
-  async getHistoricalVolumes(symbol: string, timeframe: string, limit: number = 100): Promise<number[]> {
-    try {
-      const cacheKey = `volume_${symbol}_${timeframe}_${limit}`;
+  // async getHistoricalVolumes(symbol: string, timeframe: string, limit: number = 100): Promise<number[]> {
+  //   try {
+  //     const cacheKey = `volume_${symbol}_${timeframe}_${limit}`;
       
-      // Check cache first
-      const cached = this.historicalCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.HISTORICAL_CACHE_DURATION) {
-        return cached.data;
-      }
+  //     // Check cache first
+  //     const cached = this.historicalCache.get(cacheKey);
+  //     if (cached && Date.now() - cached.timestamp < this.HISTORICAL_CACHE_DURATION) {
+  //       return cached.data;
+  //     }
 
-      // Fetch from API
-      const volumes = await this.fetchHistoricalVolumesFromAPI(symbol, timeframe, limit);
+  //     // Fetch from API
+  //     const volumes = await this.fetchHistoricalVolumesFromAPI(symbol, timeframe, limit);
       
-      // Update cache
-      this.historicalCache.set(cacheKey, {
-        data: volumes,
-        timestamp: Date.now(),
-      });
+  //     // Update cache
+  //     this.historicalCache.set(cacheKey, {
+  //       data: volumes,
+  //       timestamp: Date.now(),
+  //     });
 
-      return volumes;
-    } catch (error) {
-      this.logger.error(`Error fetching historical volumes for ${symbol}:`, error);
+  //     return volumes;
+  //   } catch (error) {
+  //     this.logger.error(`Error fetching historical volumes for ${symbol}:`, error);
       
-      // Return cached data if available, even if expired
-      const cached = this.historicalCache.get(`volume_${symbol}_${timeframe}_${limit}`);
-      if (cached) {
-        this.logger.warn(`Using cached volume data for ${symbol}`);
-        return cached.data;
-      }
+  //     // Return cached data if available, even if expired
+  //     const cached = this.historicalCache.get(`volume_${symbol}_${timeframe}_${limit}`);
+  //     if (cached) {
+  //       this.logger.warn(`Using cached volume data for ${symbol}`);
+  //       return cached.data;
+  //     }
       
-      throw error;
-    }
-  }
+  //     throw error;
+  //   }
+  // }
 
   async getPriceChange(symbol: string, timeframe: string): Promise<{
     currentPrice: number;
@@ -278,28 +279,28 @@ export class PriceMonitoringService {
     }
   }
 
-  private async fetchHistoricalVolumesFromAPI(symbol: string, timeframe: string, limit: number): Promise<number[]> {
-    // Implement your historical volume API integration here
-    // This is a placeholder - replace with actual API call
+  // private async fetchHistoricalVolumesFromAPI(symbol: string, timeframe: string, limit: number): Promise<number[]> {
+  //   // Implement your historical volume API integration here
+  //   // This is a placeholder - replace with actual API call
     
-    try {
-      // You can integrate with CoinGecko, Binance, Coinbase, etc.
-      const response = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
-      const data = response;
+  //   try {
+  //     // You can integrate with CoinGecko, Binance, Coinbase, etc.
+  //     const response = await this.binancePriceApiService.fetchBinanceCandleData(symbol, timeframe);
+  //     const data = response;
       
-      if (data.total_volumes && Array.isArray(data.total_volumes)) {
-        return data.total_volumes.slice(-limit).map((volume: [number, number]) => volume[1]);
-      }
+  //     if (data.total_volumes && Array.isArray(data.total_volumes)) {
+  //       return data.total_volumes.slice(-limit).map((volume: [number, number]) => volume[1]);
+  //     }
       
-      throw new Error('Invalid response from historical volume API');
-    } catch (error) {
-      this.logger.error(`API error for historical volumes ${symbol}:`, error);
+  //     throw new Error('Invalid response from historical volume API');
+  //   } catch (error) {
+  //     this.logger.error(`API error for historical volumes ${symbol}:`, error);
       
-      // Return mock data for development/testing
-      // Remove this in production
-      return this.getMockHistoricalVolumes(limit);
-    }
-  }
+  //     // Return mock data for development/testing
+  //     // Remove this in production
+  //     return this.getMockHistoricalVolumes(limit);
+  //   }
+  // }
 
   private timeframeToDays(timeframe: string): number {
     const timeframes: Record<string, number> = {

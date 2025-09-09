@@ -11,7 +11,6 @@ export declare class PriceMonitoringService {
     constructor(configService: ConfigService, binancePriceApiService: BinancePriceApiService);
     getCurrentPrice(symbol: string): Promise<number>;
     getHistoricalPrices(symbol: string, timeframe: string, limit?: number): Promise<number[]>;
-    getHistoricalVolumes(symbol: string, timeframe: string, limit?: number): Promise<number[]>;
     getPriceChange(symbol: string, timeframe: string): Promise<{
         currentPrice: number;
         previousPrice: number;
@@ -38,7 +37,6 @@ export declare class PriceMonitoringService {
         totalCacheSize: number;
     };
     private fetchCurrentPriceFromAPI;
-    private fetchHistoricalVolumesFromAPI;
     private timeframeToDays;
     private getMockPrice;
     private getMockHistoricalPrices;
