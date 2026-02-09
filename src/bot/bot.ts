@@ -13,7 +13,7 @@ export const initializeBot = () => {
   const bot = new Bot(process.env.BOT_TOKEN!);
 
   bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
-  bot.command("subscribe", (ctx)=>onSubscribe(ctx))
+  bot.command("subscribe", (ctx)=> onSubscribe(ctx))
   bot.command("hourstatus", hourStatus)
   bot.command("quarterhrstatus", fourHourStatus)
   bot.command("daystatus", dayStatus)
