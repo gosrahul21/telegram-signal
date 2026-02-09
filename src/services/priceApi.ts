@@ -3,7 +3,7 @@ import axios from "axios";
 // Function to fetch candlestick (OHLC) data from Binance API
 export async function fetchCandleData(symbol: string, interval: string) {
   try {
-    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}`;
+    const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}`;
     const response = await axios.get(url);
     return response.data.map((candle: any) => ({
       openTime: candle[0],
