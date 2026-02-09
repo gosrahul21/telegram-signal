@@ -23,7 +23,7 @@ export async function fetchCandleData(symbol: string, interval: string) {
 // Function to fetch the latest ticker price from Binance API
 export async function fetchTickerPrice(symbol: string) {
   try {
-    const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
+    const url = `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}`;
     const response = await axios.get(url);
     return response.data;
   } catch (error) {
