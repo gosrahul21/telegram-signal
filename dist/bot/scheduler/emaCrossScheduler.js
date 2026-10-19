@@ -4,6 +4,7 @@ exports.emaCrossScheduler = exports.renderSignal = exports.getSmallSignal = expo
 const scheduler_1 = require("../../constants/scheduler");
 const logger_1 = require("../../logger");
 const processEMASignal_1 = require("../../services/processEMASignal");
+const delay_1 = require("../utils/delay");
 // Re-export functions for backwards-compatibility
 var emaSignal_1 = require("../utils/emaSignal");
 Object.defineProperty(exports, "generateCrossSignals", { enumerable: true, get: function () { return emaSignal_1.generateCrossSignals; } });
@@ -26,10 +27,11 @@ const setupEMAInterval = (bot, duration, intervalMinutes) => {
  */
 const emaCrossScheduler = async (bot) => {
     (0, logger_1.logger)("EMA Cross Scheduler started", "green");
-    // Set up intervals for all configured timeframes
-    Object.entries(scheduler_1.EMA_SCHEDULER_INTERVALS).forEach(([duration, interval]) => {
+    // Set up intervals for all configured timeframes with staggered delay
+    for (const [duration, interval] of Object.entries(scheduler_1.EMA_SCHEDULER_INTERVALS)) {
         setupEMAInterval(bot, duration, interval);
-    });
+        await (0, delay_1.delay)(5000);
+    }
     (0, logger_1.logger)("All EMA analysis intervals configured", "green");
 };
 exports.emaCrossScheduler = emaCrossScheduler;

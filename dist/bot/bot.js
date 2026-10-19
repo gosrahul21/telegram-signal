@@ -148,10 +148,10 @@ const initializeBot = () => {
             description: "Get daily timeframe price status",
         },
     ], {}, undefined);
-    // Initialize all technical signal schedulers
-    (0, emaCrossScheduler_1.emaCrossScheduler)(bot);
-    (0, rsiScheduler_1.rsiScheduler)(bot);
-    (0, bbScheduler_1.bbScheduler)(bot);
+    // Initialize all technical signal schedulers with staggered start to avoid rate limit spikes
+    setTimeout(() => (0, emaCrossScheduler_1.emaCrossScheduler)(bot), 1000);
+    setTimeout(() => (0, rsiScheduler_1.rsiScheduler)(bot), 5000);
+    setTimeout(() => (0, bbScheduler_1.bbScheduler)(bot), 10000);
 };
 exports.initializeBot = initializeBot;
 exports.default = exports.initializeBot;

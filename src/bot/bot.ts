@@ -167,10 +167,10 @@ export const initializeBot = () => {
     undefined as any
   );
 
-  // Initialize all technical signal schedulers
-  emaCrossScheduler(bot);
-  rsiScheduler(bot);
-  bbScheduler(bot);
+  // Initialize all technical signal schedulers with staggered start to avoid rate limit spikes
+  setTimeout(() => emaCrossScheduler(bot), 1000);
+  setTimeout(() => rsiScheduler(bot), 5000);
+  setTimeout(() => bbScheduler(bot), 10000);
 };
 
 export default initializeBot;
