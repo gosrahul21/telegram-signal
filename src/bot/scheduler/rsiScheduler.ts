@@ -43,21 +43,25 @@ export const rsiScheduler = async (bot: Bot): Promise<void> => {
     await delay(7000);
   }
 
-  logger("RSI Scheduler stock started", "green");
-  // Stock scheduler during market hours
-  STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
-    schedule.scheduleJob(cronExpression, () => {
-      processRSIAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneHour);
+  if (config.ENABLE_UPSTOX) {
+    logger("RSI Scheduler stock started", "green");
+    // Stock scheduler during market hours
+    STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
+      schedule.scheduleJob(cronExpression, () => {
+        processRSIAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneHour);
+      });
     });
-  });
 
-  logger("RSI daily Scheduler stock started", "green");
-  // Daily reports for stocks
-  STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
-    schedule.scheduleJob(cronExpression, () => {
-      processRSIAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneDay);
+    logger("RSI daily Scheduler stock started", "green");
+    // Daily reports for stocks
+    STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
+      schedule.scheduleJob(cronExpression, () => {
+        processRSIAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneDay);
+      });
     });
-  });
+  } else {
+    logger("Upstox stock RSI scheduler is disabled", "yellow");
+  }
 
   logger("All RSI analysis intervals configured", "green");
 };

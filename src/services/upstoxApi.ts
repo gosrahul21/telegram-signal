@@ -57,6 +57,9 @@ export const fetchCandleHistory = async (
   toDate: string, // yyyy-mm-dd
   // fromDate: string // yyyy-mm-dd
 ): Promise<CandleData[]> => {
+  if (!config.ENABLE_UPSTOX) {
+    return [];
+  }
   try {
     // Construct the URL
     const url = `${config.UPSTOX_API_BASE}/historical-candle/${instrumentKey}/${interval}/${toDate}`;
@@ -77,6 +80,9 @@ export const getIntradayCandles = async (
   instrumentKey: string,
   interval: UpstoxInterval
 ) => {
+  if (!config.ENABLE_UPSTOX) {
+    return [];
+  }
   try {
     // Construct the URL
     const url = `${config.UPSTOX_API_BASE}/historical-candle/intraday/${instrumentKey}/${interval}`;

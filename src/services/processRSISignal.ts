@@ -20,7 +20,9 @@ export const processRSIAnalysis = async (
 ): Promise<void> => {
   for (const keyPair of fallbackKeyPairs) {
     try {
-      const candles: any = config.UPSTOX_KEY_PAIRS.includes(keyPair)
+      const isUpstox =
+        config.ENABLE_UPSTOX && config.UPSTOX_KEY_PAIRS.includes(keyPair);
+      const candles: any = isUpstox
         ? await getStockHistoricalCandles(keyPair, duration as UpstoxInterval)
         : await fetchCandleData(keyPair, duration);
 

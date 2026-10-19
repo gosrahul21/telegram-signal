@@ -9,18 +9,21 @@ const RSI_EXTREME_OVERSOLD = 20;
 const BB_PERIOD = 20;
 const BB_STD_DEV = 2;
 
-const appConfig: Record<string, any> = {
-  ...env.parsed,
-  UPSTOX_API_BASE: "https://api.upstox.com/v3",
-  BINANCE_KEY_PAIRS: [
-    "BTCUSDT",
-    "SOLUSDT",
-    "SUIUSDT",
-    "PAXGUSDT",
-    "XAGUSDT",
-    "XRPUSDT"
-  ],
-  UPSTOX_KEY_PAIRS: Object.keys(instrumentMapping),
+  const ENABLE_UPSTOX = process.env.ENABLE_UPSTOX === "true";
+
+  const appConfig: Record<string, any> = {
+    ...env.parsed,
+    ENABLE_UPSTOX,
+    UPSTOX_API_BASE: "https://api.upstox.com/v3",
+    BINANCE_KEY_PAIRS: [
+      "BTCUSDT",
+      "SOLUSDT",
+      "SUIUSDT",
+      "PAXGUSDT",
+      "XAGUSDT",
+      "XRPUSDT"
+    ],
+    UPSTOX_KEY_PAIRS: ENABLE_UPSTOX ? Object.keys(instrumentMapping) : [],
   DELAY_BETWEEN_PAIRS_MS: process.env.DELAY_BETWEEN_PAIRS_MS
     ? parseInt(process.env.DELAY_BETWEEN_PAIRS_MS, 10)
     : 5000,

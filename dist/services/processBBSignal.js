@@ -20,7 +20,8 @@ const priceApi_1 = require("./priceApi");
 const processBBAnalysis = async (bot, pairs, duration) => {
     for (const keyPair of pairs) {
         try {
-            const candles = config_1.default.UPSTOX_KEY_PAIRS.includes(keyPair)
+            const isUpstox = config_1.default.ENABLE_UPSTOX && config_1.default.UPSTOX_KEY_PAIRS.includes(keyPair);
+            const candles = isUpstox
                 ? await (0, getStockHistoricalCandles_1.default)(keyPair, duration)
                 : await (0, priceApi_1.fetchCandleData)(keyPair, duration);
             if (!candles || candles.length === 0) {

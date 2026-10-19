@@ -1,3 +1,4 @@
+import config from "../config";
 import { instrumentMapping } from "../constants/symbols";
 import { UpstoxInterval } from "../types/Duration";
 import formatDate from "../utils/helper/formatDate";
@@ -13,6 +14,9 @@ async function getStockHistoricalCandles(
   symbol: string,
   interval: UpstoxInterval
 ): Promise<CandleData[]> {
+  if (!config.ENABLE_UPSTOX) {
+    return [];
+  }
   // Iterate through each instrument in the instrument mapping
   // Calculate the toDate as current date
   const toDate = new Date();

@@ -17,7 +17,9 @@ export const getSinglePairStatusMessage = async (
   duration: "1h" | "4h" | "1d"
 ): Promise<string | null> => {
   const isUpstox =
-    config.UPSTOX_KEY_PAIRS && config.UPSTOX_KEY_PAIRS.includes(symbol);
+    config.ENABLE_UPSTOX &&
+    config.UPSTOX_KEY_PAIRS &&
+    config.UPSTOX_KEY_PAIRS.includes(symbol);
   const upstoxInterval =
     duration === "1h"
       ? UpstoxInterval.OneHour

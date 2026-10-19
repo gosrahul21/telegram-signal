@@ -43,21 +43,25 @@ export const bbScheduler = async (bot: Bot): Promise<void> => {
     await delay(7000);
   }
 
-  logger("Bollinger Bands Scheduler stock started", "green");
-  // Stock scheduler during market hours
-  STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
-    schedule.scheduleJob(cronExpression, () => {
-      processBBAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneHour);
+  if (config.ENABLE_UPSTOX) {
+    logger("Bollinger Bands Scheduler stock started", "green");
+    // Stock scheduler during market hours
+    STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
+      schedule.scheduleJob(cronExpression, () => {
+        processBBAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneHour);
+      });
     });
-  });
 
-  logger("Bollinger Bands daily Scheduler stock started", "green");
-  // Daily reports for stocks
-  STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
-    schedule.scheduleJob(cronExpression, () => {
-      processBBAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneDay);
+    logger("Bollinger Bands daily Scheduler stock started", "green");
+    // Daily reports for stocks
+    STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
+      schedule.scheduleJob(cronExpression, () => {
+        processBBAnalysis(bot, config.UPSTOX_KEY_PAIRS, UpstoxInterval.OneDay);
+      });
     });
-  });
+  } else {
+    logger("Upstox stock Bollinger Bands scheduler is disabled", "yellow");
+  }
 
   logger("All Bollinger Bands analysis intervals configured", "green");
 };

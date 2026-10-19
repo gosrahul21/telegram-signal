@@ -64,20 +64,25 @@ const rsiScheduler = async (bot) => {
         setupRSIInterval(bot, duration, interval);
         await (0, delay_1.delay)(7000);
     }
-    (0, logger_1.logger)("RSI Scheduler stock started", "green");
-    // Stock scheduler during market hours
-    scheduler_1.STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
-        schedule.scheduleJob(cronExpression, () => {
-            (0, processRSISignal_1.default)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneHour);
+    if (config_1.default.ENABLE_UPSTOX) {
+        (0, logger_1.logger)("RSI Scheduler stock started", "green");
+        // Stock scheduler during market hours
+        scheduler_1.STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
+            schedule.scheduleJob(cronExpression, () => {
+                (0, processRSISignal_1.default)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneHour);
+            });
         });
-    });
-    (0, logger_1.logger)("RSI daily Scheduler stock started", "green");
-    // Daily reports for stocks
-    scheduler_1.STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
-        schedule.scheduleJob(cronExpression, () => {
-            (0, processRSISignal_1.default)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneDay);
+        (0, logger_1.logger)("RSI daily Scheduler stock started", "green");
+        // Daily reports for stocks
+        scheduler_1.STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
+            schedule.scheduleJob(cronExpression, () => {
+                (0, processRSISignal_1.default)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneDay);
+            });
         });
-    });
+    }
+    else {
+        (0, logger_1.logger)("Upstox stock RSI scheduler is disabled", "yellow");
+    }
     (0, logger_1.logger)("All RSI analysis intervals configured", "green");
 };
 exports.rsiScheduler = rsiScheduler;

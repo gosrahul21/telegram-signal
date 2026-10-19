@@ -50,6 +50,9 @@ const aggregateToHourlyCandles = (data) => {
 };
 exports.aggregateToHourlyCandles = aggregateToHourlyCandles;
 const fetchCandleHistory = async (instrumentKey, interval, toDate) => {
+    if (!config_1.default.ENABLE_UPSTOX) {
+        return [];
+    }
     try {
         // Construct the URL
         const url = `${config_1.default.UPSTOX_API_BASE}/historical-candle/${instrumentKey}/${interval}/${toDate}`;
@@ -68,6 +71,9 @@ const fetchCandleHistory = async (instrumentKey, interval, toDate) => {
 exports.fetchCandleHistory = fetchCandleHistory;
 // hourly intraday candles
 const getIntradayCandles = async (instrumentKey, interval) => {
+    if (!config_1.default.ENABLE_UPSTOX) {
+        return [];
+    }
     try {
         // Construct the URL
         const url = `${config_1.default.UPSTOX_API_BASE}/historical-candle/intraday/${instrumentKey}/${interval}`;

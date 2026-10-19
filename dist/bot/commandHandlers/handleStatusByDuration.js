@@ -14,7 +14,9 @@ const delay_1 = require("../utils/delay");
  * Generates a comprehensive technical status report for a single pair on a given timeframe
  */
 const getSinglePairStatusMessage = async (symbol, duration) => {
-    const isUpstox = config_1.default.UPSTOX_KEY_PAIRS && config_1.default.UPSTOX_KEY_PAIRS.includes(symbol);
+    const isUpstox = config_1.default.ENABLE_UPSTOX &&
+        config_1.default.UPSTOX_KEY_PAIRS &&
+        config_1.default.UPSTOX_KEY_PAIRS.includes(symbol);
     const upstoxInterval = duration === "1h"
         ? Duration_1.UpstoxInterval.OneHour
         : duration === "4h"

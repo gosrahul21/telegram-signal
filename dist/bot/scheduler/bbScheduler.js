@@ -64,20 +64,25 @@ const bbScheduler = async (bot) => {
         setupBBInterval(bot, duration, interval);
         await (0, delay_1.delay)(7000);
     }
-    (0, logger_1.logger)("Bollinger Bands Scheduler stock started", "green");
-    // Stock scheduler during market hours
-    scheduler_1.STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
-        schedule.scheduleJob(cronExpression, () => {
-            (0, processBBSignal_1.processBBAnalysis)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneHour);
+    if (config_1.default.ENABLE_UPSTOX) {
+        (0, logger_1.logger)("Bollinger Bands Scheduler stock started", "green");
+        // Stock scheduler during market hours
+        scheduler_1.STOCK_MARKET_CRON_EXPRESSIONS.forEach((cronExpression) => {
+            schedule.scheduleJob(cronExpression, () => {
+                (0, processBBSignal_1.processBBAnalysis)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneHour);
+            });
         });
-    });
-    (0, logger_1.logger)("Bollinger Bands daily Scheduler stock started", "green");
-    // Daily reports for stocks
-    scheduler_1.STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
-        schedule.scheduleJob(cronExpression, () => {
-            (0, processBBSignal_1.processBBAnalysis)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneDay);
+        (0, logger_1.logger)("Bollinger Bands daily Scheduler stock started", "green");
+        // Daily reports for stocks
+        scheduler_1.STOCK_DAILY_CRON_EXPRESSIONS.forEach((cronExpression) => {
+            schedule.scheduleJob(cronExpression, () => {
+                (0, processBBSignal_1.processBBAnalysis)(bot, config_1.default.UPSTOX_KEY_PAIRS, Duration_1.UpstoxInterval.OneDay);
+            });
         });
-    });
+    }
+    else {
+        (0, logger_1.logger)("Upstox stock Bollinger Bands scheduler is disabled", "yellow");
+    }
     (0, logger_1.logger)("All Bollinger Bands analysis intervals configured", "green");
 };
 exports.bbScheduler = bbScheduler;
