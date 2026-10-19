@@ -24,6 +24,26 @@ export function calculateMACD(prices: number[]) {
   });
 }
 
+export interface BollingerBandsOutput {
+  middle: number;
+  upper: number;
+  lower: number;
+  pb: number;
+}
+
+// Calculate Bollinger Bands
+export function calculateBollingerBands(
+  prices: number[],
+  period = 20,
+  stdDev = 2
+): BollingerBandsOutput[] {
+  return ti.BollingerBands.calculate({
+    period,
+    values: prices,
+    stdDev,
+  });
+}
+
 export const getIndicatorOnTimeFrame = async (
   symbol: string,
   timeframe: string

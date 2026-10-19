@@ -14,9 +14,10 @@ async function getStockHistoricalCandles(symbol, interval) {
     const toDate = new Date();
     // Format the dates to "yyyy:mm:dd" format
     const formattedToDate = (0, formatDate_1.default)(toDate); //current date
-    let historicalCandles = await (0, upstoxApi_1.fetchCandleHistory)(symbols_1.instrumentMapping[symbol], interval, formattedToDate);
+    const intrumentKey = symbols_1.instrumentMapping[symbol];
+    let historicalCandles = await (0, upstoxApi_1.fetchCandleHistory)(intrumentKey, interval, formattedToDate);
     if (interval === Duration_1.UpstoxInterval.OneHour) {
-        const intradayCandles = await (0, upstoxApi_1.getIntradayCandles)(symbol, interval);
+        const intradayCandles = await (0, upstoxApi_1.getIntradayCandles)(intrumentKey, interval);
         // const fiveMinutesCandles = await getIntradayCandles(
         //   symbol,
         //   UpstoxInterval.FiveMinutes
@@ -28,9 +29,9 @@ async function getStockHistoricalCandles(symbol, interval) {
         ];
     }
     else if (interval === Duration_1.UpstoxInterval.OneDay) {
-        const intradayCandles = await (0, upstoxApi_1.getIntradayCandles)(symbol, Duration_1.UpstoxInterval.OneHour);
+        const intradayCandles = await (0, upstoxApi_1.getIntradayCandles)(intrumentKey, Duration_1.UpstoxInterval.OneHour);
         historicalCandles = [
-            (0, upstoxApi_1.aggregateToDayCandle)(intradayCandles),
+            ...(intradayCandles && !!intradayCandles.length ? [(0, upstoxApi_1.aggregateToDayCandle)(intradayCandles)] : []),
             ...historicalCandles,
         ];
     }

@@ -26,9 +26,15 @@ const userSchema = new mongoose.Schema({
             enum: ['1h', '4h', '1d'],
             required: true,
         },
-        // Add any additional fields you need for the subscription here
     }],
-    // You can add more fields as needed
+    alertTypes: {
+        type: [String],
+        default: ['EMA', 'RSI', 'BB'],
+    },
+    subscribedPairs: {
+        type: [String],
+        default: [],
+    },
     createdAt: {
         type: Date,
         default: Date.now,
@@ -39,8 +45,18 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-
 // Create the User model using the schema
 export const User = mongoose.model('User', userSchema);
 
-export type UserDocument = typeof User & mongoose.Document;
+export interface IUser {
+    chatId: number;
+    telegramId: number;
+    username: string;
+    alertTypes?: string[];
+    subscribedPairs?: string[];
+    subscriptions?: { pairName: string; duration: string }[];
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+export type UserDocument = mongoose.Document & IUser;

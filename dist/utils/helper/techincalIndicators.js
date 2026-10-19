@@ -4,6 +4,7 @@ exports.getIndicatorOnTimeFrame = void 0;
 exports.calculateEMA = calculateEMA;
 exports.calculateRSI = calculateRSI;
 exports.calculateMACD = calculateMACD;
+exports.calculateBollingerBands = calculateBollingerBands;
 const priceApi_1 = require("../../services/priceApi");
 const ti = require("technicalindicators");
 // Calculate EMA
@@ -23,6 +24,14 @@ function calculateMACD(prices) {
         signalPeriod: 9,
         SimpleMAOscillator: false,
         SimpleMASignal: false,
+    });
+}
+// Calculate Bollinger Bands
+function calculateBollingerBands(prices, period = 20, stdDev = 2) {
+    return ti.BollingerBands.calculate({
+        period,
+        values: prices,
+        stdDev,
     });
 }
 const getIndicatorOnTimeFrame = async (symbol, timeframe) => {

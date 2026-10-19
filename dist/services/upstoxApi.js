@@ -9,6 +9,7 @@ const axios_1 = __importDefault(require("axios"));
 const candleData_1 = require("../models/candleData");
 require("dotenv/config");
 const config_1 = __importDefault(require("../config"));
+const logger_1 = require("../logger");
 const aggregateToHourlyCandles = (data) => {
     // Initialize an array to hold the aggregated hourly candles
     const hourlyCandles = [];
@@ -85,8 +86,12 @@ const getIntradayCandles = async (instrumentKey, interval) => {
 exports.getIntradayCandles = getIntradayCandles;
 const aggregateToDayCandle = (intradayCandles) => {
     // Ensure the input list is not empty
-    if (!intradayCandles || intradayCandles.length === 0) {
+    if (!intradayCandles) {
         throw new Error("No intraday candles provided");
+    }
+    if (intradayCandles.length === 0) {
+        (0, logger_1.logger)("intraday Candles found empty", 'yellow');
+        return null;
     }
     const firstCandle = intradayCandles[intradayCandles.length - 1];
     const lastCandle = intradayCandles[0];

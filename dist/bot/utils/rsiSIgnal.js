@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rsiSignal = void 0;
 const config_1 = __importDefault(require("../../config"));
-const rsiSignal = (currentRSI, keyName, price, time) => {
+const rsiSignal = (currentRSI, keyName, price, time, neutral = false) => {
     const signals = [];
     if (currentRSI >= config_1.default.RSI_EXTREME_OVERBOUGHT) {
         signals.push({
@@ -41,6 +41,15 @@ const rsiSignal = (currentRSI, keyName, price, time) => {
             price: price,
             rsi: currentRSI,
             details: `RSI is oversold at ${currentRSI.toFixed(2)}, potential buy signal`,
+        });
+    }
+    else if (neutral) {
+        signals.push({
+            type: `${keyName} RSI Neutral`,
+            time: time,
+            price: price,
+            rsi: currentRSI,
+            details: `RSI is neutral at ${currentRSI.toFixed(2)}`,
         });
     }
     return signals;

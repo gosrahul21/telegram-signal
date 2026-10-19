@@ -6,27 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchCandleData = fetchCandleData;
 exports.fetchTickerPrice = fetchTickerPrice;
 const axios_1 = __importDefault(require("axios"));
-// // Function to fetch candle data from the Coindcx API
-// export async function fetchCandleData(pair: string, interval: Duration) {
-//     try {
-//         const url = `https://public.coindcx.com/market_data/candles/?pair=${pair}&interval=${interval}`;
-//         const response: any = await axios.get(url);
-//         const data = await response.data;
-//         return data;
-//     } catch (error) {
-//         console.log(error);
-//     }
-// }
-// export async function fetchTickerPrice() {
-//     const url = `https://api.coindcx.com/exchange/ticker/`;
-//     const response: any = await axios.get(url);
-//     const data = await response.data;
-//     return data;
-// }
 // Function to fetch candlestick (OHLC) data from Binance API
 async function fetchCandleData(symbol, interval) {
     try {
-        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}`;
+        const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}`;
         const response = await axios_1.default.get(url);
         return response.data.map((candle) => ({
             openTime: candle[0],
@@ -46,7 +29,7 @@ async function fetchCandleData(symbol, interval) {
 // Function to fetch the latest ticker price from Binance API
 async function fetchTickerPrice(symbol) {
     try {
-        const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
+        const url = `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}`;
         const response = await axios_1.default.get(url);
         return response.data;
     }

@@ -5,16 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkUserDataMiddleware = void 0;
 const userService_1 = __importDefault(require("../services/userService"));
-const userService = new userService_1.default();
 const checkUserDataMiddleware = async (ctx, next) => {
-    const from = ctx.from || "";
+    const from = ctx.from;
     if (!from)
         return;
-    const userData = await userService.getUserByChatId(from.id);
-    if (userData?.username !== from.username ||
-        userData?.firstName !== from.first_name ||
-        userData?.lastName !== from.last_name) {
-        await userService.updateUser(from.id, from.first_name, from.last_name || "", from.username || "");
+    const userData = await userService_1.default.getUserByChatId(from.id);
+    if (userData && userData.username !== from.username) {
+        await userService_1.default.updateUser(String(userData._id || from.id), {
+            username: from.username || "",
+        });
     }
     await next();
 };

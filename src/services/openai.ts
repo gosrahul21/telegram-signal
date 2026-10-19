@@ -1,19 +1,15 @@
 require("dotenv").config(); // Load environment variables
 import { getIndicatorOnTimeFrame } from "../utils/helper/techincalIndicators";
 import fs from "fs";
-// const { Configuration, OpenAIApi } = require("openai");
-import OpenAI from "openai";
-// Set up OpenAI configuration
-// const configuration = new Configuration({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
-// const openai = new OpenAIApi(configuration);
-const OPENAI_API_KEY =
-  "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";
+let OpenAI: any;
+try {
+  OpenAI = require("openai");
+} catch {
+  OpenAI = null;
+}
 
-const client = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-});
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const client = OpenAI ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 async function getTechnicalAnalysis(data: string) {
   try {
     // Construct the prompt

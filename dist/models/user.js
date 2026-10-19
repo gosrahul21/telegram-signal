@@ -61,9 +61,15 @@ const userSchema = new mongoose.Schema({
                 enum: ['1h', '4h', '1d'],
                 required: true,
             },
-            // Add any additional fields you need for the subscription here
         }],
-    // You can add more fields as needed
+    alertTypes: {
+        type: [String],
+        default: ['EMA', 'RSI', 'BB'],
+    },
+    subscribedPairs: {
+        type: [String],
+        default: [],
+    },
     createdAt: {
         type: Date,
         default: Date.now,
