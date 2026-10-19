@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.toCoinDCXFuturesPair = toCoinDCXFuturesPair;
 exports.fetchCandleData = fetchCandleData;
 exports.fetchTickerPrice = fetchTickerPrice;
 const axios_1 = __importDefault(require("axios"));
-// Realistic browser headers to prevent Cloudflare / WAF 418 "I'm a teapot" blocks on cloud IPs
+// Realistic browser headers to prevent WAF / rate-limit blocks on cloud IPs
 const BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     Accept: "application/json, text/plain, */*",
@@ -17,6 +18,16 @@ const BROWSER_HEADERS = {
 const REQUEST_TIMEOUT_MS = 8000;
 const CACHE_TTL_MS = 20000; // 20 seconds cache across schedulers
 const TICKER_CACHE_TTL_MS = 10000; // 10 seconds for ticker prices
+// CoinDCX Futures resolution mapping
+const COINDCX_RESOLUTION_MAP = {
+    "1m": { resolution: "1", seconds: 60 },
+    "5m": { resolution: "5", seconds: 300 },
+    "15m": { resolution: "15", seconds: 900 },
+    "30m": { resolution: "30", seconds: 1800 },
+    "1h": { resolution: "60", seconds: 3600 },
+    "4h": { resolution: "240", seconds: 14400 },
+    "1d": { resolution: "1D", seconds: 86400 },
+};
 // Bybit interval parameter mapping
 const BYBIT_INTERVAL_MAP = {
     "1m": "1",
@@ -51,25 +62,25 @@ const inFlightTickers = new Map();
 // Dynamic cooldown if Binance Futures (fapi) sends 418 or 429
 let fapiCooldownUntil = 0;
 const FAPI_COOLDOWN_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-// Rate limiter: strictly maintain at least 5 seconds between consecutive Binance API calls
-const MIN_BINANCE_CALL_INTERVAL_MS = 5000;
-let lastBinanceCallTime = 0;
-let binanceRequestQueue = Promise.resolve();
+// Rate limiter: maintain at least 5 seconds between consecutive API calls
+const MIN_CALL_INTERVAL_MS = 5000;
+let lastCallTime = 0;
+let requestQueue = Promise.resolve();
 /**
- * Enforces a strict minimum of 5 seconds between outgoing Binance API calls
+ * Enforces a minimum of 5 seconds between outgoing exchange API calls
  * across all schedulers, symbols, and commands.
  */
-async function throttleBinanceCall() {
-    const waitPromise = binanceRequestQueue.then(async () => {
+async function throttleCall() {
+    const waitPromise = requestQueue.then(async () => {
         const now = Date.now();
-        const elapsed = now - lastBinanceCallTime;
-        if (lastBinanceCallTime > 0 && elapsed < MIN_BINANCE_CALL_INTERVAL_MS) {
-            const waitTime = MIN_BINANCE_CALL_INTERVAL_MS - elapsed;
+        const elapsed = now - lastCallTime;
+        if (lastCallTime > 0 && elapsed < MIN_CALL_INTERVAL_MS) {
+            const waitTime = MIN_CALL_INTERVAL_MS - elapsed;
             await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
-        lastBinanceCallTime = Date.now();
+        lastCallTime = Date.now();
     });
-    binanceRequestQueue = waitPromise.catch(() => { });
+    requestQueue = waitPromise.catch(() => { });
     return waitPromise;
 }
 function isFapiInCooldown() {
@@ -77,17 +88,101 @@ function isFapiInCooldown() {
 }
 function triggerFapiCooldown(status, reason) {
     fapiCooldownUntil = Date.now() + FAPI_COOLDOWN_DURATION_MS;
-    console.warn(`[priceApi] Binance fapi responded with HTTP ${status} (${reason}). Cooldown activated for 10 minutes; automatically using Binance Vision and Bybit fallbacks.`);
+    console.warn(`[priceApi] Binance fapi responded with HTTP ${status} (${reason}). Cooldown activated for 10 minutes; automatically using CoinDCX and Bybit fallbacks.`);
 }
 const axiosConfig = {
     headers: BROWSER_HEADERS,
     timeout: REQUEST_TIMEOUT_MS,
 };
 /**
+ * Converts standard crypto symbol to CoinDCX Futures format (e.g. BTCUSDT -> B-BTC_USDT)
+ */
+function toCoinDCXFuturesPair(symbol) {
+    const clean = symbol.trim().toUpperCase();
+    if (clean.startsWith("B-"))
+        return clean;
+    const base = clean.replace(/[-_]?USDT$/i, "");
+    return `B-${base}_USDT`;
+}
+/**
+ * Fetch futures candlestick data from CoinDCX API (Primary Provider)
+ */
+async function fetchFromCoinDCXFutures(symbol, interval) {
+    const cfg = COINDCX_RESOLUTION_MAP[interval];
+    if (!cfg)
+        return null;
+    const pair = toCoinDCXFuturesPair(symbol);
+    const to = Math.floor(Date.now() / 1000);
+    // Fetch ~120 candles so all indicators (50 EMA, 20 BB, 14 RSI) have ample data
+    const from = to - 120 * cfg.seconds;
+    try {
+        await throttleCall();
+        const url = "https://public.coindcx.com/market_data/candlesticks";
+        const response = await axios_1.default.get(url, {
+            ...axiosConfig,
+            params: {
+                pair,
+                from,
+                to,
+                resolution: cfg.resolution,
+                pcode: "f",
+            },
+        });
+        if (response.data?.s === "ok" &&
+            Array.isArray(response.data.data) &&
+            response.data.data.length > 0) {
+            const intervalMs = cfg.seconds * 1000;
+            return response.data.data.map((c) => ({
+                openTime: c.time,
+                open: Number(c.open),
+                high: Number(c.high),
+                low: Number(c.low),
+                close: Number(c.close),
+                volume: Number(c.volume),
+                closeTime: c.time + intervalMs - 1,
+            }));
+        }
+    }
+    catch (err) {
+        console.warn(`[priceApi] CoinDCX futures error for ${symbol}: ${err.message}`);
+    }
+    return null;
+}
+/**
+ * Fetch candle data from Bybit Linear Market as universal fallback
+ */
+async function fetchFromBybit(symbol, interval) {
+    try {
+        const bybitInterval = BYBIT_INTERVAL_MAP[interval] || "15";
+        const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${bybitInterval}&limit=200`;
+        const response = await axios_1.default.get(url, axiosConfig);
+        const list = response.data?.result?.list;
+        if (Array.isArray(list) && list.length > 0) {
+            const intervalMs = DURATION_MS_MAP[interval] || 15 * 60 * 1000;
+            // Bybit returns candles newest-first; reverse to oldest-first to match standard format
+            return list.slice().reverse().map((c) => {
+                const openTime = parseInt(c[0], 10);
+                return {
+                    openTime,
+                    open: parseFloat(c[1]),
+                    high: parseFloat(c[2]),
+                    low: parseFloat(c[3]),
+                    close: parseFloat(c[4]),
+                    volume: parseFloat(c[5]),
+                    closeTime: openTime + intervalMs - 1,
+                };
+            });
+        }
+    }
+    catch (err) {
+        console.warn(`[priceApi] Bybit fallback error for ${symbol}: ${err.message}`);
+    }
+    return null;
+}
+/**
  * Fetch candle data from Binance Spot endpoints (Vision API cluster & mirrors)
  */
 async function fetchFromBinanceSpot(symbol, interval) {
-    // data-api.binance.vision is Binance's official public cluster for server scripts and bots
     const spotEndpoints = [
         "https://data-api.binance.vision/api/v3/klines",
         "https://api.binance.com/api/v3/klines",
@@ -96,7 +191,7 @@ async function fetchFromBinanceSpot(symbol, interval) {
     ];
     for (const baseUrl of spotEndpoints) {
         try {
-            await throttleBinanceCall();
+            await throttleCall();
             const url = `${baseUrl}?symbol=${symbol}&interval=${interval}&limit=500`;
             const response = await axios_1.default.get(url, axiosConfig);
             if (Array.isArray(response.data) && response.data.length > 0) {
@@ -113,10 +208,8 @@ async function fetchFromBinanceSpot(symbol, interval) {
         }
         catch (err) {
             if (err.response?.status === 400) {
-                // Not a spot symbol (e.g. futures-only commodity contract)
                 return null;
             }
-            // If error (418/429/timeout), continue to next spot mirror
         }
     }
     return null;
@@ -129,7 +222,7 @@ async function fetchFromBinanceFutures(symbol, interval) {
         return null;
     }
     try {
-        await throttleBinanceCall();
+        await throttleCall();
         const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=500`;
         const response = await axios_1.default.get(url, axiosConfig);
         if (Array.isArray(response.data) && response.data.length > 0) {
@@ -156,39 +249,9 @@ async function fetchFromBinanceFutures(symbol, interval) {
     return null;
 }
 /**
- * Fetch candle data from Bybit Linear Market as universal fallback
- */
-async function fetchFromBybit(symbol, interval) {
-    try {
-        const bybitInterval = BYBIT_INTERVAL_MAP[interval] || "15";
-        const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${bybitInterval}&limit=200`;
-        const response = await axios_1.default.get(url, axiosConfig);
-        const list = response.data?.result?.list;
-        if (Array.isArray(list) && list.length > 0) {
-            const intervalMs = DURATION_MS_MAP[interval] || 15 * 60 * 1000;
-            // Bybit returns candles newest-first; reverse to oldest-first to match Binance format
-            return list.slice().reverse().map((c) => {
-                const openTime = parseInt(c[0], 10);
-                return {
-                    openTime,
-                    open: parseFloat(c[1]),
-                    high: parseFloat(c[2]),
-                    low: parseFloat(c[3]),
-                    close: parseFloat(c[4]),
-                    volume: parseFloat(c[5]),
-                    closeTime: openTime + intervalMs - 1,
-                };
-            });
-        }
-    }
-    catch (err) {
-        console.warn(`[priceApi] Bybit fallback error for ${symbol}: ${err.message}`);
-    }
-    return null;
-}
-/**
  * Robust candle fetcher with short-term cache, in-flight promise sharing,
- * and resilient multi-provider fallback (Binance Vision -> Binance Futures -> Bybit)
+ * and multi-provider fallback.
+ * Prioritizes CoinDCX Futures -> Bybit Linear -> Binance Spot/Vision -> Binance Futures.
  */
 async function fetchCandleData(symbol, interval) {
     const normalizedSymbol = symbol.toUpperCase();
@@ -206,8 +269,20 @@ async function fetchCandleData(symbol, interval) {
     // 3. Initiate fetch with fallbacks
     const fetchPromise = (async () => {
         try {
+            // 1. PRIMARY: Fetch from CoinDCX Futures
+            const coindcxCandles = await fetchFromCoinDCXFutures(normalizedSymbol, interval);
+            if (coindcxCandles && coindcxCandles.length > 0) {
+                candleCache.set(cacheKey, { data: coindcxCandles, timestamp: Date.now() });
+                return coindcxCandles;
+            }
+            // 2. SECONDARY: Bybit Linear
+            const bybitCandles = await fetchFromBybit(normalizedSymbol, interval);
+            if (bybitCandles && bybitCandles.length > 0) {
+                candleCache.set(cacheKey, { data: bybitCandles, timestamp: Date.now() });
+                return bybitCandles;
+            }
+            // 3. TERTIARY: Binance Spot / Vision (if not futures-only)
             const isFuturesOnly = KNOWN_FUTURES_ONLY.has(normalizedSymbol);
-            // For standard crypto pairs: Try Binance Vision / Spot first (immune to cloud IP blocks)
             if (!isFuturesOnly) {
                 const spotCandles = await fetchFromBinanceSpot(normalizedSymbol, interval);
                 if (spotCandles && spotCandles.length > 0) {
@@ -215,17 +290,11 @@ async function fetchCandleData(symbol, interval) {
                     return spotCandles;
                 }
             }
-            // Try Binance Futures
+            // 4. Binance Futures (if not in cooldown)
             const futuresCandles = await fetchFromBinanceFutures(normalizedSymbol, interval);
             if (futuresCandles && futuresCandles.length > 0) {
                 candleCache.set(cacheKey, { data: futuresCandles, timestamp: Date.now() });
                 return futuresCandles;
-            }
-            // Fallback to Bybit Linear
-            const bybitCandles = await fetchFromBybit(normalizedSymbol, interval);
-            if (bybitCandles && bybitCandles.length > 0) {
-                candleCache.set(cacheKey, { data: bybitCandles, timestamp: Date.now() });
-                return bybitCandles;
             }
             console.error(`[priceApi] All candle providers failed for ${normalizedSymbol} (${interval})`);
             return null;
@@ -238,7 +307,8 @@ async function fetchCandleData(symbol, interval) {
     return fetchPromise;
 }
 /**
- * Fetch latest ticker price with multi-provider fallback and caching
+ * Fetch latest ticker price with multi-provider fallback and caching.
+ * Prioritizes CoinDCX Futures trades -> Bybit Linear -> Binance.
  */
 async function fetchTickerPrice(symbol) {
     const normalizedSymbol = symbol.toUpperCase();
@@ -253,47 +323,25 @@ async function fetchTickerPrice(symbol) {
     }
     const fetchPromise = (async () => {
         try {
-            const isFuturesOnly = KNOWN_FUTURES_ONLY.has(normalizedSymbol);
-            // Try Binance Vision / Spot
-            if (!isFuturesOnly) {
-                try {
-                    await throttleBinanceCall();
-                    const res = await axios_1.default.get(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${normalizedSymbol}`, axiosConfig);
-                    if (res.data?.price) {
-                        const result = {
-                            symbol: normalizedSymbol,
-                            price: res.data.price,
-                        };
-                        tickerCache.set(cacheKey, { data: result, timestamp: Date.now() });
-                        return result;
-                    }
-                }
-                catch {
-                    // Fall through
+            const pair = toCoinDCXFuturesPair(normalizedSymbol);
+            // 1. PRIMARY: CoinDCX Futures latest trades
+            try {
+                await throttleCall();
+                const res = await axios_1.default.get(`https://api.coindcx.com/exchange/v1/derivatives/futures/data/trades?pair=${pair}`, axiosConfig);
+                const ltp = res.data?.[0]?.price;
+                if (ltp !== undefined && ltp !== null) {
+                    const result = {
+                        symbol: normalizedSymbol,
+                        price: String(ltp),
+                    };
+                    tickerCache.set(cacheKey, { data: result, timestamp: Date.now() });
+                    return result;
                 }
             }
-            // Try Binance Futures (if not in cooldown)
-            if (!isFapiInCooldown()) {
-                try {
-                    await throttleBinanceCall();
-                    const res = await axios_1.default.get(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${normalizedSymbol}`, axiosConfig);
-                    if (res.data?.price) {
-                        const result = {
-                            symbol: normalizedSymbol,
-                            price: res.data.price,
-                        };
-                        tickerCache.set(cacheKey, { data: result, timestamp: Date.now() });
-                        return result;
-                    }
-                }
-                catch (err) {
-                    const status = err.response?.status;
-                    if (status === 418 || status === 429) {
-                        triggerFapiCooldown(status, "Ticker price limit");
-                    }
-                }
+            catch {
+                // Fall through
             }
-            // Fallback to Bybit
+            // 2. SECONDARY: Bybit
             try {
                 const res = await axios_1.default.get(`https://api.bybit.com/v5/market/tickers?category=linear&symbol=${normalizedSymbol}`, axiosConfig);
                 const lastPrice = res.data?.result?.list?.[0]?.lastPrice;
@@ -308,6 +356,21 @@ async function fetchTickerPrice(symbol) {
             }
             catch (err) {
                 console.warn(`[priceApi] Bybit ticker error for ${normalizedSymbol}: ${err.message}`);
+            }
+            // 3. TERTIARY: Binance Spot / Vision
+            try {
+                const res = await axios_1.default.get(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${normalizedSymbol}`, axiosConfig);
+                if (res.data?.price) {
+                    const result = {
+                        symbol: normalizedSymbol,
+                        price: res.data.price,
+                    };
+                    tickerCache.set(cacheKey, { data: result, timestamp: Date.now() });
+                    return result;
+                }
+            }
+            catch {
+                // Fall through
             }
             console.error(`[priceApi] All ticker providers failed for ${normalizedSymbol}`);
             return null;
