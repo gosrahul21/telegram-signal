@@ -139,9 +139,9 @@ export function toCoinDCXFuturesPair(symbol: string): string {
 }
 
 /**
- * Fetch futures candlestick data from CoinDCX API (Primary Provider)
+ * Fetch futures candlestick data from CoinDCX API
  */
-async function fetchFromCoinDCXFutures(
+export async function fetchFromCoinDCXFutures(
   symbol: string,
   interval: string
 ): Promise<CandleData[] | null> {
@@ -193,7 +193,7 @@ async function fetchFromCoinDCXFutures(
 /**
  * Fetch candle data from Bybit Linear Market as universal fallback
  */
-async function fetchFromBybit(
+export async function fetchFromBybit(
   symbol: string,
   interval: string
 ): Promise<CandleData[] | null> {
@@ -229,7 +229,7 @@ async function fetchFromBybit(
 /**
  * Fetch candle data from Binance Spot endpoints (Vision API cluster & mirrors)
  */
-async function fetchFromBinanceSpot(
+export async function fetchFromBinanceSpot(
   symbol: string,
   interval: string
 ): Promise<CandleData[] | null> {
@@ -269,7 +269,7 @@ async function fetchFromBinanceSpot(
 /**
  * Fetch candle data from Binance Futures (fapi.binance.com)
  */
-async function fetchFromBinanceFutures(
+export async function fetchFromBinanceFutures(
   symbol: string,
   interval: string
 ): Promise<CandleData[] | null> {
@@ -307,7 +307,7 @@ async function fetchFromBinanceFutures(
 /**
  * Robust candle fetcher with short-term cache, in-flight promise sharing,
  * and multi-provider fallback.
- * Prioritizes CoinDCX Futures -> Bybit Linear -> Binance Spot/Vision -> Binance Futures.
+ * Prioritizes CoinDCX Futures (or Binance if USE_BINANCE=true) with automatic fallbacks.
  */
 export async function fetchCandleData(
   symbol: string,
@@ -331,35 +331,68 @@ export async function fetchCandleData(
   // 3. Initiate fetch with fallbacks
   const fetchPromise = (async (): Promise<CandleData[] | null> => {
     try {
-      // 1. PRIMARY: Fetch from CoinDCX Futures
-      const coindcxCandles = await fetchFromCoinDCXFutures(normalizedSymbol, interval);
-      if (coindcxCandles && coindcxCandles.length > 0) {
-        candleCache.set(cacheKey, { data: coindcxCandles, timestamp: Date.now() });
-        return coindcxCandles;
-      }
-
-      // 2. SECONDARY: Bybit Linear
-      const bybitCandles = await fetchFromBybit(normalizedSymbol, interval);
-      if (bybitCandles && bybitCandles.length > 0) {
-        candleCache.set(cacheKey, { data: bybitCandles, timestamp: Date.now() });
-        return bybitCandles;
-      }
-
-      // 3. TERTIARY: Binance Spot / Vision (if not futures-only)
       const isFuturesOnly = KNOWN_FUTURES_ONLY.has(normalizedSymbol);
-      if (!isFuturesOnly) {
-        const spotCandles = await fetchFromBinanceSpot(normalizedSymbol, interval);
-        if (spotCandles && spotCandles.length > 0) {
-          candleCache.set(cacheKey, { data: spotCandles, timestamp: Date.now() });
-          return spotCandles;
-        }
-      }
+      const preferBinance =
+        process.env.USE_BINANCE === "true" ||
+        process.env.CANDLE_PROVIDER?.toLowerCase() === "binance";
 
-      // 4. Binance Futures (if not in cooldown)
-      const futuresCandles = await fetchFromBinanceFutures(normalizedSymbol, interval);
-      if (futuresCandles && futuresCandles.length > 0) {
-        candleCache.set(cacheKey, { data: futuresCandles, timestamp: Date.now() });
-        return futuresCandles;
+      if (preferBinance) {
+        // BINANCE PREFERRED MODE
+        if (!isFuturesOnly) {
+          const spotCandles = await fetchFromBinanceSpot(normalizedSymbol, interval);
+          if (spotCandles && spotCandles.length > 0) {
+            candleCache.set(cacheKey, { data: spotCandles, timestamp: Date.now() });
+            return spotCandles;
+          }
+        }
+        const futuresCandles = await fetchFromBinanceFutures(normalizedSymbol, interval);
+        if (futuresCandles && futuresCandles.length > 0) {
+          candleCache.set(cacheKey, { data: futuresCandles, timestamp: Date.now() });
+          return futuresCandles;
+        }
+
+        // Fallbacks to CoinDCX and Bybit
+        const coindcxCandles = await fetchFromCoinDCXFutures(normalizedSymbol, interval);
+        if (coindcxCandles && coindcxCandles.length > 0) {
+          candleCache.set(cacheKey, { data: coindcxCandles, timestamp: Date.now() });
+          return coindcxCandles;
+        }
+        const bybitCandles = await fetchFromBybit(normalizedSymbol, interval);
+        if (bybitCandles && bybitCandles.length > 0) {
+          candleCache.set(cacheKey, { data: bybitCandles, timestamp: Date.now() });
+          return bybitCandles;
+        }
+      } else {
+        // COINDCX PREFERRED MODE (Default during Binance ban)
+        // 1. PRIMARY: Fetch from CoinDCX Futures
+        const coindcxCandles = await fetchFromCoinDCXFutures(normalizedSymbol, interval);
+        if (coindcxCandles && coindcxCandles.length > 0) {
+          candleCache.set(cacheKey, { data: coindcxCandles, timestamp: Date.now() });
+          return coindcxCandles;
+        }
+
+        // 2. SECONDARY: Bybit Linear
+        const bybitCandles = await fetchFromBybit(normalizedSymbol, interval);
+        if (bybitCandles && bybitCandles.length > 0) {
+          candleCache.set(cacheKey, { data: bybitCandles, timestamp: Date.now() });
+          return bybitCandles;
+        }
+
+        // 3. TERTIARY: Binance Spot / Vision (if not futures-only)
+        if (!isFuturesOnly) {
+          const spotCandles = await fetchFromBinanceSpot(normalizedSymbol, interval);
+          if (spotCandles && spotCandles.length > 0) {
+            candleCache.set(cacheKey, { data: spotCandles, timestamp: Date.now() });
+            return spotCandles;
+          }
+        }
+
+        // 4. Binance Futures (if not in cooldown)
+        const futuresCandles = await fetchFromBinanceFutures(normalizedSymbol, interval);
+        if (futuresCandles && futuresCandles.length > 0) {
+          candleCache.set(cacheKey, { data: futuresCandles, timestamp: Date.now() });
+          return futuresCandles;
+        }
       }
 
       console.error(`[priceApi] All candle providers failed for ${normalizedSymbol} (${interval})`);
@@ -375,7 +408,7 @@ export async function fetchCandleData(
 
 /**
  * Fetch latest ticker price with multi-provider fallback and caching.
- * Prioritizes CoinDCX Futures trades -> Bybit Linear -> Binance.
+ * Prioritizes CoinDCX Futures trades -> Bybit Linear -> Binance (or Binance first if USE_BINANCE=true).
  */
 export async function fetchTickerPrice(
   symbol: string
@@ -396,8 +429,56 @@ export async function fetchTickerPrice(
   const fetchPromise = (async (): Promise<TickerPriceData | null> => {
     try {
       const pair = toCoinDCXFuturesPair(normalizedSymbol);
+      const isFuturesOnly = KNOWN_FUTURES_ONLY.has(normalizedSymbol);
+      const preferBinance =
+        process.env.USE_BINANCE === "true" ||
+        process.env.CANDLE_PROVIDER?.toLowerCase() === "binance";
 
-      // 1. PRIMARY: CoinDCX Futures latest trades
+      if (preferBinance) {
+        // BINANCE PREFERRED MODE
+        if (!isFuturesOnly) {
+          try {
+            await throttleCall();
+            const res = await axios.get(
+              `https://data-api.binance.vision/api/v3/ticker/price?symbol=${normalizedSymbol}`,
+              axiosConfig
+            );
+            if (res.data?.price) {
+              const result: TickerPriceData = {
+                symbol: normalizedSymbol,
+                price: res.data.price,
+              };
+              tickerCache.set(cacheKey, { data: result, timestamp: Date.now() });
+              return result;
+            }
+          } catch {}
+        }
+
+        if (!isFapiInCooldown()) {
+          try {
+            await throttleCall();
+            const res = await axios.get(
+              `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${normalizedSymbol}`,
+              axiosConfig
+            );
+            if (res.data?.price) {
+              const result: TickerPriceData = {
+                symbol: normalizedSymbol,
+                price: res.data.price,
+              };
+              tickerCache.set(cacheKey, { data: result, timestamp: Date.now() });
+              return result;
+            }
+          } catch (err: any) {
+            const status = err.response?.status;
+            if (status === 418 || status === 429) {
+              triggerFapiCooldown(status, "Ticker price limit");
+            }
+          }
+        }
+      }
+
+      // PRIMARY (or fallback): CoinDCX Futures latest trades
       try {
         await throttleCall();
         const res = await axios.get(
@@ -417,7 +498,7 @@ export async function fetchTickerPrice(
         // Fall through
       }
 
-      // 2. SECONDARY: Bybit
+      // SECONDARY: Bybit
       try {
         const res = await axios.get(
           `https://api.bybit.com/v5/market/tickers?category=linear&symbol=${normalizedSymbol}`,
@@ -436,7 +517,7 @@ export async function fetchTickerPrice(
         console.warn(`[priceApi] Bybit ticker error for ${normalizedSymbol}: ${err.message}`);
       }
 
-      // 3. TERTIARY: Binance Spot / Vision
+      // TERTIARY: Binance Spot / Vision
       try {
         const res = await axios.get(
           `https://data-api.binance.vision/api/v3/ticker/price?symbol=${normalizedSymbol}`,
