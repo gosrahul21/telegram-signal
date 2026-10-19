@@ -74,6 +74,30 @@ const inFlightTickers = new Map<string, Promise<TickerPriceData | null>>();
 let fapiCooldownUntil = 0;
 const FAPI_COOLDOWN_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 
+// Rate limiter: strictly maintain at least 5 seconds between consecutive Binance API calls
+const MIN_BINANCE_CALL_INTERVAL_MS = 5000;
+let lastBinanceCallTime = 0;
+let binanceRequestQueue: Promise<void> = Promise.resolve();
+
+/**
+ * Enforces a strict minimum of 5 seconds between outgoing Binance API calls
+ * across all schedulers, symbols, and commands.
+ */
+async function throttleBinanceCall(): Promise<void> {
+  const waitPromise = binanceRequestQueue.then(async () => {
+    const now = Date.now();
+    const elapsed = now - lastBinanceCallTime;
+    if (lastBinanceCallTime > 0 && elapsed < MIN_BINANCE_CALL_INTERVAL_MS) {
+      const waitTime = MIN_BINANCE_CALL_INTERVAL_MS - elapsed;
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+    lastBinanceCallTime = Date.now();
+  });
+
+  binanceRequestQueue = waitPromise.catch(() => {});
+  return waitPromise;
+}
+
 function isFapiInCooldown(): boolean {
   return Date.now() < fapiCooldownUntil;
 }
@@ -107,6 +131,7 @@ async function fetchFromBinanceSpot(
 
   for (const baseUrl of spotEndpoints) {
     try {
+      await throttleBinanceCall();
       const url = `${baseUrl}?symbol=${symbol}&interval=${interval}&limit=500`;
       const response = await axios.get(url, axiosConfig);
       if (Array.isArray(response.data) && response.data.length > 0) {
@@ -144,6 +169,7 @@ async function fetchFromBinanceFutures(
   }
 
   try {
+    await throttleBinanceCall();
     const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=500`;
     const response = await axios.get(url, axiosConfig);
     if (Array.isArray(response.data) && response.data.length > 0) {
@@ -293,6 +319,7 @@ export async function fetchTickerPrice(
       // Try Binance Vision / Spot
       if (!isFuturesOnly) {
         try {
+          await throttleBinanceCall();
           const res = await axios.get(
             `https://data-api.binance.vision/api/v3/ticker/price?symbol=${normalizedSymbol}`,
             axiosConfig
@@ -313,6 +340,7 @@ export async function fetchTickerPrice(
       // Try Binance Futures (if not in cooldown)
       if (!isFapiInCooldown()) {
         try {
+          await throttleBinanceCall();
           const res = await axios.get(
             `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${normalizedSymbol}`,
             axiosConfig

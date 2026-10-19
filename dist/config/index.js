@@ -21,7 +21,9 @@ const appConfig = {
         "XRPUSDT"
     ],
     UPSTOX_KEY_PAIRS: Object.keys(symbols_1.instrumentMapping),
-    DELAY_BETWEEN_PAIRS_MS: 1000,
+    DELAY_BETWEEN_PAIRS_MS: process.env.DELAY_BETWEEN_PAIRS_MS
+        ? parseInt(process.env.DELAY_BETWEEN_PAIRS_MS, 10)
+        : 5000,
     RSI_EXTREME_OVERBOUGHT,
     RSI_OVERBOUGHT_THRESHOLD,
     RSI_EXTREME_OVERSOLD,

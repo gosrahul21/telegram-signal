@@ -109,11 +109,13 @@ const handleStatusByDuration = async (ctx, duration) => {
                 const msg = await (0, exports.getSinglePairStatusMessage)(pair, duration);
                 if (msg) {
                     await ctx.reply(msg, { parse_mode: "HTML" });
-                    await (0, delay_1.delay)(300);
                 }
             }
             catch (err) {
                 console.error(`Error delivering ${duration} status for ${pair}:`, err);
+            }
+            finally {
+                await (0, delay_1.delay)(config_1.default.DELAY_BETWEEN_PAIRS_MS || 5000);
             }
         }
     }
