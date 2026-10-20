@@ -46,11 +46,13 @@ export const processRSIAnalysis = async (
       }
 
       if (eligibleSignals.length > 0) {
-        await renderRSISignal(keyPair, eligibleSignals, bot, duration);
+        const sentCount = await renderRSISignal(keyPair, eligibleSignals, bot, duration);
 
-        for (const signal of eligibleSignals) {
-          const trackerKey = candleTracker.getKey(keyPair, duration, signal.type);
-          candleTracker.recordCandleAlert(trackerKey, candleId);
+        if (sentCount > 0) {
+          for (const signal of eligibleSignals) {
+            const trackerKey = candleTracker.getKey(keyPair, duration, signal.type);
+            candleTracker.recordCandleAlert(trackerKey, candleId);
+          }
         }
       }
     } catch (error) {

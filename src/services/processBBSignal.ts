@@ -51,12 +51,14 @@ export const processBBAnalysis = async (
       }
 
       if (eligibleSignals.length > 0) {
-        await renderBBSignal(keyPair, eligibleSignals, bot, duration);
+        const sentCount = await renderBBSignal(keyPair, eligibleSignals, bot, duration);
 
         // Record candle as alerted so next iterations on the same candle will NOT alert again
-        for (const signal of eligibleSignals) {
-          const trackerKey = candleTracker.getKey(keyPair, duration, signal.type);
-          candleTracker.recordCandleAlert(trackerKey, signal.candleId);
+        if (sentCount > 0) {
+          for (const signal of eligibleSignals) {
+            const trackerKey = candleTracker.getKey(keyPair, duration, signal.type);
+            candleTracker.recordCandleAlert(trackerKey, signal.candleId);
+          }
         }
       }
     } catch (error) {

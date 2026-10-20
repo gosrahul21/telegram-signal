@@ -40,11 +40,13 @@ const processBBAnalysis = async (bot, pairs, duration) => {
                 eligibleSignals.push(signal);
             }
             if (eligibleSignals.length > 0) {
-                await (0, renderBBSignal_1.renderBBSignal)(keyPair, eligibleSignals, bot, duration);
+                const sentCount = await (0, renderBBSignal_1.renderBBSignal)(keyPair, eligibleSignals, bot, duration);
                 // Record candle as alerted so next iterations on the same candle will NOT alert again
-                for (const signal of eligibleSignals) {
-                    const trackerKey = candleTracker_1.default.getKey(keyPair, duration, signal.type);
-                    candleTracker_1.default.recordCandleAlert(trackerKey, signal.candleId);
+                if (sentCount > 0) {
+                    for (const signal of eligibleSignals) {
+                        const trackerKey = candleTracker_1.default.getKey(keyPair, duration, signal.type);
+                        candleTracker_1.default.recordCandleAlert(trackerKey, signal.candleId);
+                    }
                 }
             }
         }

@@ -39,10 +39,12 @@ const processRSIAnalysis = async (bot, fallbackKeyPairs, duration, neutral = fal
                 eligibleSignals.push(signal);
             }
             if (eligibleSignals.length > 0) {
-                await (0, renderRSISignal_1.renderRSISignal)(keyPair, eligibleSignals, bot, duration);
-                for (const signal of eligibleSignals) {
-                    const trackerKey = candleTracker_1.default.getKey(keyPair, duration, signal.type);
-                    candleTracker_1.default.recordCandleAlert(trackerKey, candleId);
+                const sentCount = await (0, renderRSISignal_1.renderRSISignal)(keyPair, eligibleSignals, bot, duration);
+                if (sentCount > 0) {
+                    for (const signal of eligibleSignals) {
+                        const trackerKey = candleTracker_1.default.getKey(keyPair, duration, signal.type);
+                        candleTracker_1.default.recordCandleAlert(trackerKey, candleId);
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 import { initializeBot } from "../bot/bot";
 import connectToDatabase from "../models/connection";
+import userRepository from "../repositories/userRepository";
 import axios from "axios";
 async function init() {
   try {
@@ -18,6 +19,7 @@ async function init() {
     );
 
     await connectToDatabase();
+    await userRepository.fetchSubscribedUsers();
     initializeBot();
   } catch (error) {
     console.log("error on initializing bot", error);

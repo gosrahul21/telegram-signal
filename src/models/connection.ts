@@ -33,8 +33,14 @@ mongoose.connection.on('disconnected', () => {
 });
 
 // Event handler for when the connection is reconnected
-mongoose.connection.on('reconnected', () => {
+mongoose.connection.on('reconnected', async () => {
     console.log('Reconnected to MongoDB');
+    try {
+        const userRepository = (await import("../repositories/userRepository")).default;
+        await userRepository.fetchSubscribedUsers();
+    } catch (err) {
+        console.error('Failed to refresh subscribers on reconnect:', err);
+    }
 });
 
 // Event handler for any connection errors

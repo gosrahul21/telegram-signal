@@ -20,21 +20,52 @@ class UserRepository {
   }
 
   /**
+   * Helper to find a user in memory comparing chatId or telegramId as strings
+   */
+  private findUserInMemory(chatId: number | string): any | undefined {
+    const idStr = String(chatId);
+    return this.subscribedUsers.find(
+      (u: any) => String(u.chatId) === idStr || String(u.telegramId) === idStr
+    );
+  }
+
+  /**
    * Add a new subscriber or update an existing one
    */
   async addUser(userData: Partial<IUser>) {
     try {
-      const existingUser = this.subscribedUsers.find(
-        (u: any) => u.chatId === userData.chatId
-      );
+      const existingUser = this.findUserInMemory(userData.chatId as any);
       if (existingUser) {
         return existingUser;
       }
 
+      // Check DB directly in case in-memory cache was not loaded or is out of sync
+      const dbUser = await User.findOne({
+        $or: [
+          { chatId: userData.chatId },
+          { chatId: String(userData.chatId) },
+          { telegramId: userData.telegramId },
+          { telegramId: Number(userData.telegramId) },
+        ],
+      }).lean();
+
+      if (dbUser) {
+        const userObj: any = {
+          ...dbUser,
+          chatId: Number(dbUser.chatId) || dbUser.chatId,
+          telegramId: Number(dbUser.telegramId) || dbUser.telegramId,
+          alertTypes: dbUser.alertTypes && dbUser.alertTypes.length > 0 ? dbUser.alertTypes : DEFAULT_ALERT_TYPES,
+          subscribedPairs: dbUser.subscribedPairs && dbUser.subscribedPairs.length > 0 ? dbUser.subscribedPairs : config.BINANCE_KEY_PAIRS,
+        };
+        this.subscribedUsers.push(userObj);
+        return userObj;
+      }
+
       const defaultData = {
         ...userData,
-        alertTypes: userData.alertTypes || DEFAULT_ALERT_TYPES,
-        subscribedPairs: userData.subscribedPairs || config.BINANCE_KEY_PAIRS,
+        chatId: Number(userData.chatId) || userData.chatId,
+        alertTypes: userData.alertTypes && userData.alertTypes.length > 0 ? userData.alertTypes : DEFAULT_ALERT_TYPES,
+        subscribedPairs: userData.subscribedPairs && userData.subscribedPairs.length > 0 ? userData.subscribedPairs : config.BINANCE_KEY_PAIRS,
       };
 
       const newUser = new User(defaultData);
@@ -42,7 +73,22 @@ class UserRepository {
       const userObj = savedUser.toObject();
       this.subscribedUsers.push(userObj);
       return userObj;
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        const dbUser = await User.findOne({
+          $or: [
+            { chatId: userData.chatId },
+            { chatId: String(userData.chatId) },
+            { telegramId: userData.telegramId },
+            { telegramId: Number(userData.telegramId) },
+          ],
+        }).lean();
+        if (dbUser) {
+          const userObj = { ...dbUser };
+          this.subscribedUsers.push(userObj);
+          return userObj;
+        }
+      }
       console.error("Error adding user:", error);
       throw error;
     }
@@ -64,12 +110,12 @@ class UserRepository {
 
     return this.subscribedUsers.filter((user: any) => {
       const alertTypes: string[] =
-        user.alertTypes !== undefined
+        user.alertTypes !== undefined && user.alertTypes.length > 0
           ? user.alertTypes
           : DEFAULT_ALERT_TYPES;
 
       const pairs: string[] =
-        user.subscribedPairs !== undefined
+        user.subscribedPairs !== undefined && user.subscribedPairs.length > 0
           ? user.subscribedPairs
           : config.BINANCE_KEY_PAIRS;
 
@@ -87,8 +133,8 @@ class UserRepository {
   /**
    * Retrieve preferences for a given user
    */
-  getUserPreferences(chatId: number): UserPreferences {
-    const user = this.subscribedUsers.find((u: any) => u.chatId === chatId);
+  getUserPreferences(chatId: number | string): UserPreferences {
+    const user = this.findUserInMemory(chatId);
     if (!user) {
       return {
         alertTypes: [...DEFAULT_ALERT_TYPES],
@@ -98,20 +144,30 @@ class UserRepository {
 
     return {
       alertTypes:
-        user.alertTypes !== undefined
+        user.alertTypes !== undefined && user.alertTypes.length > 0
           ? [...user.alertTypes]
           : [...DEFAULT_ALERT_TYPES],
       subscribedPairs:
-        user.subscribedPairs !== undefined
+        user.subscribedPairs !== undefined && user.subscribedPairs.length > 0
           ? [...user.subscribedPairs]
           : [...config.BINANCE_KEY_PAIRS],
     };
   }
 
-  private async persistUser(chatId: number, update: any): Promise<void> {
+  private async persistUser(chatId: number | string, update: any): Promise<void> {
     try {
       if (mongoose.connection.readyState === 1) {
-        await User.findOneAndUpdate({ chatId }, update, { new: true });
+        await User.findOneAndUpdate(
+          {
+            $or: [
+              { chatId: Number(chatId) },
+              { chatId: String(chatId) },
+              { telegramId: Number(chatId) },
+            ],
+          },
+          update,
+          { new: true }
+        );
       }
     } catch (err) {
       console.error(`Failed to persist user preferences for ${chatId}:`, err);
@@ -121,16 +177,22 @@ class UserRepository {
   /**
    * Toggle an alert type (e.g., 'EMA', 'RSI', 'BB') for a user
    */
-  async toggleAlertType(chatId: number, alertType: string): Promise<boolean> {
+  async toggleAlertType(chatId: number | string, alertType: string): Promise<boolean> {
     const normAlert = alertType.toUpperCase();
-    let user = this.subscribedUsers.find((u: any) => u.chatId === chatId);
+    let user = this.findUserInMemory(chatId);
 
     if (!user) {
-      user = { chatId, telegramId: chatId, username: `user_${chatId}`, alertTypes: [...DEFAULT_ALERT_TYPES], subscribedPairs: [...config.BINANCE_KEY_PAIRS] };
+      user = {
+        chatId: Number(chatId) || chatId,
+        telegramId: Number(chatId) || chatId,
+        username: `user_${chatId}`,
+        alertTypes: [...DEFAULT_ALERT_TYPES],
+        subscribedPairs: [...config.BINANCE_KEY_PAIRS],
+      };
       this.subscribedUsers.push(user);
     }
 
-    let alertTypes: string[] = user.alertTypes ? [...user.alertTypes] : [...DEFAULT_ALERT_TYPES];
+    let alertTypes: string[] = user.alertTypes && user.alertTypes.length > 0 ? [...user.alertTypes] : [...DEFAULT_ALERT_TYPES];
     const exists = alertTypes.some((t) => t.toUpperCase() === normAlert);
 
     if (exists) {
@@ -147,16 +209,22 @@ class UserRepository {
   /**
    * Toggle a symbol (e.g., 'BTCUSDT', 'SOLUSDT') for a user
    */
-  async toggleSymbol(chatId: number, symbol: string): Promise<boolean> {
+  async toggleSymbol(chatId: number | string, symbol: string): Promise<boolean> {
     const normSymbol = symbol.toUpperCase();
-    let user = this.subscribedUsers.find((u: any) => u.chatId === chatId);
+    let user = this.findUserInMemory(chatId);
 
     if (!user) {
-      user = { chatId, telegramId: chatId, username: `user_${chatId}`, alertTypes: [...DEFAULT_ALERT_TYPES], subscribedPairs: [...config.BINANCE_KEY_PAIRS] };
+      user = {
+        chatId: Number(chatId) || chatId,
+        telegramId: Number(chatId) || chatId,
+        username: `user_${chatId}`,
+        alertTypes: [...DEFAULT_ALERT_TYPES],
+        subscribedPairs: [...config.BINANCE_KEY_PAIRS],
+      };
       this.subscribedUsers.push(user);
     }
 
-    let pairs: string[] = user.subscribedPairs ? [...user.subscribedPairs] : [...config.BINANCE_KEY_PAIRS];
+    let pairs: string[] = user.subscribedPairs && user.subscribedPairs.length > 0 ? [...user.subscribedPairs] : [...config.BINANCE_KEY_PAIRS];
     const exists = pairs.some((p) => p.toUpperCase() === normSymbol);
 
     if (exists) {
@@ -173,15 +241,21 @@ class UserRepository {
   /**
    * Set specific alert type status
    */
-  async setAlertType(chatId: number, alertType: string, enabled: boolean): Promise<void> {
+  async setAlertType(chatId: number | string, alertType: string, enabled: boolean): Promise<void> {
     const normAlert = alertType.toUpperCase();
-    let user = this.subscribedUsers.find((u: any) => u.chatId === chatId);
+    let user = this.findUserInMemory(chatId);
     if (!user) {
-      user = { chatId, telegramId: chatId, username: `user_${chatId}`, alertTypes: [...DEFAULT_ALERT_TYPES], subscribedPairs: [...config.BINANCE_KEY_PAIRS] };
+      user = {
+        chatId: Number(chatId) || chatId,
+        telegramId: Number(chatId) || chatId,
+        username: `user_${chatId}`,
+        alertTypes: [...DEFAULT_ALERT_TYPES],
+        subscribedPairs: [...config.BINANCE_KEY_PAIRS],
+      };
       this.subscribedUsers.push(user);
     }
 
-    let alertTypes: string[] = user.alertTypes ? [...user.alertTypes] : [...DEFAULT_ALERT_TYPES];
+    let alertTypes: string[] = user.alertTypes && user.alertTypes.length > 0 ? [...user.alertTypes] : [...DEFAULT_ALERT_TYPES];
     alertTypes = alertTypes.filter((t) => t.toUpperCase() !== normAlert);
     if (enabled) {
       alertTypes.push(normAlert);
@@ -194,15 +268,21 @@ class UserRepository {
   /**
    * Set specific symbol status
    */
-  async setSymbol(chatId: number, symbol: string, enabled: boolean): Promise<void> {
+  async setSymbol(chatId: number | string, symbol: string, enabled: boolean): Promise<void> {
     const normSymbol = symbol.toUpperCase();
-    let user = this.subscribedUsers.find((u: any) => u.chatId === chatId);
+    let user = this.findUserInMemory(chatId);
     if (!user) {
-      user = { chatId, telegramId: chatId, username: `user_${chatId}`, alertTypes: [...DEFAULT_ALERT_TYPES], subscribedPairs: [...config.BINANCE_KEY_PAIRS] };
+      user = {
+        chatId: Number(chatId) || chatId,
+        telegramId: Number(chatId) || chatId,
+        username: `user_${chatId}`,
+        alertTypes: [...DEFAULT_ALERT_TYPES],
+        subscribedPairs: [...config.BINANCE_KEY_PAIRS],
+      };
       this.subscribedUsers.push(user);
     }
 
-    let pairs: string[] = user.subscribedPairs ? [...user.subscribedPairs] : [...config.BINANCE_KEY_PAIRS];
+    let pairs: string[] = user.subscribedPairs && user.subscribedPairs.length > 0 ? [...user.subscribedPairs] : [...config.BINANCE_KEY_PAIRS];
     pairs = pairs.filter((p) => p.toUpperCase() !== normSymbol);
     if (enabled) {
       pairs.push(normSymbol);
@@ -215,10 +295,16 @@ class UserRepository {
   /**
    * Enable all alerts and symbols for a user
    */
-  async enableAll(chatId: number): Promise<void> {
-    let user = this.subscribedUsers.find((u: any) => u.chatId === chatId);
+  async enableAll(chatId: number | string): Promise<void> {
+    let user = this.findUserInMemory(chatId);
     if (!user) {
-      user = { chatId, telegramId: chatId, username: `user_${chatId}`, alertTypes: [...DEFAULT_ALERT_TYPES], subscribedPairs: [...config.BINANCE_KEY_PAIRS] };
+      user = {
+        chatId: Number(chatId) || chatId,
+        telegramId: Number(chatId) || chatId,
+        username: `user_${chatId}`,
+        alertTypes: [...DEFAULT_ALERT_TYPES],
+        subscribedPairs: [...config.BINANCE_KEY_PAIRS],
+      };
       this.subscribedUsers.push(user);
     }
 
@@ -231,10 +317,16 @@ class UserRepository {
   /**
    * Disable all alerts and symbols for a user
    */
-  async disableAll(chatId: number): Promise<void> {
-    let user = this.subscribedUsers.find((u: any) => u.chatId === chatId);
+  async disableAll(chatId: number | string): Promise<void> {
+    let user = this.findUserInMemory(chatId);
     if (!user) {
-      user = { chatId, telegramId: chatId, username: `user_${chatId}`, alertTypes: [], subscribedPairs: [] };
+      user = {
+        chatId: Number(chatId) || chatId,
+        telegramId: Number(chatId) || chatId,
+        username: `user_${chatId}`,
+        alertTypes: [],
+        subscribedPairs: [],
+      };
       this.subscribedUsers.push(user);
     }
 
@@ -247,14 +339,19 @@ class UserRepository {
   /**
    * Delete a subscriber
    */
-  async deleteUser(chatId: number) {
+  async deleteUser(chatId: number | string) {
     try {
-      const deletedUser = await User.findOneAndDelete({ chatId }).lean();
-      if (deletedUser) {
-        this.subscribedUsers = this.subscribedUsers.filter(
-          (u: any) => u.chatId !== chatId
-        );
-      }
+      const deletedUser = await User.findOneAndDelete({
+        $or: [
+          { chatId: Number(chatId) },
+          { chatId: String(chatId) },
+          { telegramId: Number(chatId) },
+        ],
+      }).lean();
+      const idStr = String(chatId);
+      this.subscribedUsers = this.subscribedUsers.filter(
+        (u: any) => String(u.chatId) !== idStr && String(u.telegramId) !== idStr
+      );
       return deletedUser;
     } catch (error) {
       console.error("Error deleting user:", error);
@@ -285,7 +382,13 @@ class UserRepository {
 
   async getUserByChatId(chatId: number | string) {
     try {
-      return await User.findOne({ chatId: Number(chatId) }).lean();
+      return await User.findOne({
+        $or: [
+          { chatId: Number(chatId) },
+          { chatId: String(chatId) },
+          { telegramId: Number(chatId) },
+        ],
+      }).lean();
     } catch (error) {
       console.error("Error retrieving user:", error);
       throw error;
@@ -307,7 +410,14 @@ class UserRepository {
   async fetchSubscribedUsers() {
     const users = await this.fetchSubscribedUserFromDb();
     if (users && users.length > 0) {
-      this.subscribedUsers = users;
+      this.subscribedUsers = users.map((u: any) => ({
+        ...u,
+        chatId: Number(u.chatId) || u.chatId,
+        telegramId: Number(u.telegramId) || u.telegramId,
+        alertTypes: u.alertTypes && u.alertTypes.length > 0 ? u.alertTypes : DEFAULT_ALERT_TYPES,
+        subscribedPairs: u.subscribedPairs && u.subscribedPairs.length > 0 ? u.subscribedPairs : config.BINANCE_KEY_PAIRS,
+      }));
+      console.log(`[UserRepository] Loaded ${this.subscribedUsers.length} subscribed users from database`);
     }
   }
 }

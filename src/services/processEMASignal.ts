@@ -43,12 +43,14 @@ export const processEMAAnalysis = async (
       }
 
       if (eligibleSignals.length > 0) {
-        await renderEMASignal(keyPair, eligibleSignals, bot, duration);
+        const sentCount = await renderEMASignal(keyPair, eligibleSignals, bot, duration);
 
-        for (const signal of eligibleSignals) {
-          if (signal.candleId) {
-            const trackerKey = candleTracker.getKey(keyPair, duration, signal.type);
-            candleTracker.recordCandleAlert(trackerKey, signal.candleId);
+        if (sentCount > 0) {
+          for (const signal of eligibleSignals) {
+            if (signal.candleId) {
+              const trackerKey = candleTracker.getKey(keyPair, duration, signal.type);
+              candleTracker.recordCandleAlert(trackerKey, signal.candleId);
+            }
           }
         }
       }

@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const bot_1 = require("../bot/bot");
 const connection_1 = __importDefault(require("../models/connection"));
+const userRepository_1 = __importDefault(require("../repositories/userRepository"));
 const axios_1 = __importDefault(require("axios"));
 async function init() {
     try {
@@ -19,6 +20,7 @@ async function init() {
             }
         }, 1000 * 60 * 10);
         await (0, connection_1.default)();
+        await userRepository_1.default.fetchSubscribedUsers();
         (0, bot_1.initializeBot)();
     }
     catch (error) {
